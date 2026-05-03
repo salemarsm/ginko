@@ -1,0 +1,272 @@
+openapi: 3.0.3
+info:
+  title: llm-memory API
+  version: 0.1.0
+  description: Local-first canonical memory API for AI agents.
+servers:
+  - url: http://127.0.0.1:8787
+paths:
+  /api/config:
+    get:
+      summary: Get effective server configuration
+      responses:
+        '200':
+          description: Effective config
+  /api/context:
+    post:
+      summary: Build compact token-budgeted prompt context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContextRequest'
+      responses:
+        '200':
+          description: Prompt-ready context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextResponse'
+  /api/suggest:
+    post:
+      summary: Suggest durable memories/learnings from prompts and model output
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestRequest'
+      responses:
+        '200':
+          description: Memory candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestResponse'
+  /api/search:
+    post:
+      summary: Search raw memories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Query'
+      responses:
+        '200':
+          description: Matching memories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Memory'
+  /api/memories:
+    get:
+      summary: Search memories with query parameters
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: subject
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: scope
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Matching memories
+    post:
+      summary: Create or update a memory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Memory'
+      responses:
+        '200':
+          description: Stored memory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memory'
+  /api/memories/{id}:
+    get:
+      summary: Get memory by ID
+      parameters:
+        - $ref: '#/components/parameters/MemoryID'
+      responses:
+        '200':
+          description: Memory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memory'
+        '404':
+          description: Not found
+    delete:
+      summary: Forget/delete memory
+      parameters:
+        - $ref: '#/components/parameters/MemoryID'
+      responses:
+        '200':
+          description: Deleted
+  /api/supersede/{id}:
+    post:
+      summary: Supersede an old memory with a newer one
+      parameters:
+        - $ref: '#/components/parameters/MemoryID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Memory'
+      responses:
+        '200':
+          description: New memory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memory'
+  /api/events:
+    get:
+      summary: List recent audit events
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+components:
+  parameters:
+    MemoryID:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  schemas:
+    Source:
+      type: object
+      required: [kind, ref]
+      properties:
+        kind: { type: string, example: conversation }
+        ref: { type: string, example: session/message }
+    Memory:
+      type: object
+      required: [type, subject, content, source, scope, confidence]
+      properties:
+        id: { type: string, example: mem_01J }
+        type:
+          type: string
+          enum: [preference, fact, decision, task, note, relationship]
+        subject: { type: string, example: botmaster }
+        content: { type: string, example: User prefers direct technical answers. }
+        source:
+          $ref: '#/components/schemas/Source'
+        scope:
+          type: string
+          enum: [global, project, session, private]
+        confidence: { type: number, minimum: 0, maximum: 1, example: 0.95 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        valid_from: { type: string, format: date-time, nullable: true }
+        valid_until: { type: string, format: date-time, nullable: true }
+        supersedes_id: { type: string, nullable: true }
+        superseded_by: { type: string, nullable: true }
+        tags:
+          type: array
+          items: { type: string }
+        embedding_refs:
+          type: object
+          additionalProperties: { type: string }
+    Query:
+      type: object
+      properties:
+        text: { type: string }
+        types:
+          type: array
+          items: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+        subject: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        limit: { type: integer, default: 20 }
+    ContextRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string }
+        subject: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+        types:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        max_tokens: { type: integer, default: 1200 }
+        max_memories: { type: integer, default: 12 }
+    ContextResponse:
+      type: object
+      properties:
+        context: { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Memory'
+        estimated_tokens: { type: integer }
+        budget_tokens: { type: integer }
+        truncated: { type: boolean }
+    SuggestRequest:
+      type: object
+      properties:
+        subject: { type: string }
+        scope: { type: string }
+        user_prompt: { type: string }
+        assistant_response: { type: string }
+        llm_inference: { type: string }
+        max_candidates: { type: integer }
+        min_confidence: { type: number }
+    SuggestResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            type: object
+            properties:
+              memory:
+                $ref: '#/components/schemas/Memory'
+              reason: { type: string }
+              requires_confirmation: { type: boolean }
+    Event:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string }
+        payload: { type: string }
+        source:
+          $ref: '#/components/schemas/Source'
+        created_at: { type: string, format: date-time }
