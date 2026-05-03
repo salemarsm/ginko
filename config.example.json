@@ -1,0 +1,19 @@
+{
+  "server": {
+    "addr": "127.0.0.1:8787"
+  },
+  "database": {
+    "path": "./memory.db"
+  },
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-5.5",
+    "api_key_env": "OPENAI_API_KEY"
+  },
+  "embedding": {
+    "provider": "openai",
+    "model": "text-embedding-3-small",
+    "index": "sqlite-fts",
+    "api_key_env": "OPENAI_API_KEY"
+  }
+}
