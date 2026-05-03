@@ -12,3 +12,6 @@ Core endpoints:
 - `DELETE /api/memories/{id}`
 - `GET /api/events`
 - `GET /api/config`
+
+
+Memory suggestion details: [Suggestion engine](suggestion-engine.md).

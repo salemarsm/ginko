@@ -10,17 +10,18 @@
 - embedded GUI
 - CLI
 
-## v0.2 — Agent integration
+## v0.2 — Agent integration and local safety
 
 - MCP tools
 - token-budgeted context
 - memory suggestion
 - CLI integration
 - OpenClaw / Claude Code / Codex examples
-
-## v0.3 — Safety and governance
-
 - local API token
+
+## v0.3 — Governance
+
+- memory write policy enforcement
 - memory write policy enforcement
 - sensitive-data guardrails
 - soft delete vs hard delete

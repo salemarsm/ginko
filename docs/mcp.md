@@ -32,3 +32,6 @@ Only call memory_remember for explicit preferences, stable facts, project decisi
 Ask before storing sensitive, private, or uncertain information.
 Prefer compact memories over raw document chunks.
 ```
+
+
+See also: [Suggestion engine](suggestion-engine.md).

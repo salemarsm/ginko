@@ -1,16 +1,14 @@
-# ☣️ llm-memory
+# llm-memory
 
 <p align="center">
   <strong>Local-first canonical memory for AI agents. Go + SQLite at the core. LLMs at the edge.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/salemarsm/llm-memory/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/salemarsm/llm-memory/ci.yml?branch=main&label=tests&style=for-the-badge"></a>
   <a href="https://pkg.go.dev/github.com/salemarsm/llm-memory"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-00ADD8?style=for-the-badge&logo=go&logoColor=white"></a>
   <a href="https://github.com/salemarsm/llm-memory/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/salemarsm/llm-memory?style=for-the-badge"></a>
   <img alt="SQLite" src="https://img.shields.io/badge/sqlite-source%20of%20truth-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
-  <img alt="MCP" src="https://img.shields.io/badge/MCP-ready-black?style=for-the-badge">
-  <img alt="LLM Agnostic" src="https://img.shields.io/badge/LLM-agnostic-black?style=for-the-badge">
+  <img alt="Experimental" src="https://img.shields.io/badge/status-experimental-orange?style=for-the-badge">
 </p>
 
 <p align="center">
@@ -36,6 +34,30 @@ It solves a common problem: agents often confuse chat history, vector search, do
 - **SQLite** is the canonical source of truth.
 
 > **Vector search is not memory. Chat history is not memory. The LLM is not the database.**
+
+## Status
+
+**Experimental v0.x.** The local core, HTTP API, CLI, MCP server, token-budgeted context, and heuristic suggestion flow are implemented. APIs and schemas may change before v1.0.
+
+Implemented today:
+
+- SQLite canonical memory store
+- append-only events
+- FTS5 memory search
+- HTTP API and local GUI
+- `memctl`, `memmcp`, and `llm-memory` CLIs
+- MCP tools: `memory_context`, `memory_suggest`, `memory_remember`, `memory_search`
+- heuristic memory suggestions
+- document/chunk schema foundation for future RAG ingestion
+
+Planned / not production-ready yet:
+
+- API token / local auth
+- Docling ingestion command
+- hybrid vector ranking
+- full contradiction resolution policy
+- production multi-user isolation
+- stable v1 API guarantees
 
 ## The problem
 
@@ -176,7 +198,7 @@ Evidence:
 doc_id=..., chunk_id=...
 ```
 
-See [RAG pipeline](docs/rag-pipeline.md).
+See [RAG pipeline](docs/rag-pipeline.md). **Docling ingestion is planned; document/chunk tables are implemented as the foundation.**
 
 ## Memory types
 
@@ -214,7 +236,7 @@ Do not store:
 - uncertain inference as fact
 - private data in shared/group contexts
 
-More: [Security](docs/security.md), [MCP transparent usage](docs/mcp.md).
+More: [Security](docs/security.md), [MCP transparent usage](docs/mcp.md), [Suggestion engine](docs/suggestion-engine.md).
 
 ## HTTP API
 
@@ -252,6 +274,36 @@ Example response from `POST /api/context`:
   "truncated": false
 }
 ```
+
+## Real SQLite schema excerpt
+
+The canonical memory table is intentionally boring and inspectable:
+
+```sql
+CREATE TABLE memories (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  content TEXT NOT NULL,
+  source_kind TEXT NOT NULL,
+  source_ref TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  confidence REAL NOT NULL CHECK(confidence >= 0 AND confidence <= 1),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  valid_from TEXT,
+  valid_until TEXT,
+  supersedes_id TEXT,
+  superseded_by TEXT,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  embedding_refs_json TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE VIRTUAL TABLE memories_fts
+USING fts5(id UNINDEXED, content, subject, tags);
+```
+
+Full schema notes: [Memory model](docs/memory-model.md).
 
 ## Transparent MCP integration
 
@@ -347,17 +399,17 @@ Keep project-specific knowledge compartmentalized per tool, target, client, or e
 - embedded GUI
 - CLI
 
-### v0.2 — Agent integration
+### v0.2 — Agent integration and local safety
 
 - MCP tools
 - token-budgeted context
 - memory suggestion
 - CLI integration
 - OpenClaw / Claude Code / Codex examples
-
-### v0.3 — Safety and governance
-
 - local API token
+
+### v0.3 — Governance
+
 - memory write policy enforcement
 - sensitive-data guardrails
 - soft delete vs hard delete
@@ -389,6 +441,7 @@ Keep project-specific knowledge compartmentalized per tool, target, client, or e
 - [OpenAPI](docs/openapi.yaml)
 - [CLI](docs/cli.md)
 - [MCP](docs/mcp.md)
+- [Suggestion engine](docs/suggestion-engine.md)
 - [RAG pipeline](docs/rag-pipeline.md)
 - [Security](docs/security.md)
 - [Roadmap](docs/roadmap.md)
