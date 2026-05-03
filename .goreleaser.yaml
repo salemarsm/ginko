@@ -1,0 +1,63 @@
+version: 2
+
+project_name: llm-memory
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: llm-memory
+    main: ./cmd/llm-memory
+    binary: llm-memory
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+  - id: memctl
+    main: ./cmd/memctl
+    binary: memctl
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+  - id: memmcp
+    main: ./cmd/memmcp
+    binary: memmcp
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+  - id: memserver
+    main: ./cmd/memserver
+    binary: memserver
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"

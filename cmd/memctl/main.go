@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/salemarsm/llm-memory/internal/version"
 	"github.com/salemarsm/llm-memory/memory"
 )
 
@@ -21,7 +22,13 @@ func main() {
 	typ := flag.String("type", "note", "memory type")
 	maxTokens := flag.Int("max-tokens", 1200, "context token budget")
 	jsonOut := flag.Bool("json", false, "print raw JSON")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("memctl", version.String())
+		return
+	}
 
 	if flag.NArg() < 1 {
 		usage()

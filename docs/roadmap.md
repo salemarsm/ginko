@@ -56,7 +56,8 @@ Status: **mostly implemented**.
 ### Remaining v0.1 polish
 
 - GitHub Actions CI
-- release artifacts for Linux/macOS
+- GoReleaser config and release artifacts for Linux/macOS/Windows
+- version command with ldflags stamping
 - Makefile or Taskfile
 - example screenshots/GIF
 - schema documentation generated from migrations/source
@@ -81,11 +82,13 @@ Goal: make the project safe and easy enough for real local agent workflows.
 ### Should have
 
 - improved `doctor` with actionable fixes
+- read-only doctor plus explicit repair commands
 - port conflict detection with suggestions
 - config validation command
 - structured logging
 - version command for all binaries
 - homebrew-ready layout or install docs
+- project/subject identity detection helper with ambiguity errors
 
 ### Exit criteria
 
@@ -102,11 +105,13 @@ Goal: make memory feel transparent in Claude Code, Codex-like agents, OpenClaw, 
 - documented Claude Code MCP setup with tested config
 - documented Codex fallback using `memctl context`
 - documented OpenClaw integration pattern
+- one-command setup/integration skeleton for major agents, with dry-run mode first
 - MCP contract tests
 - bootstrap prompts per agent
 - memory write policy examples
 - `memory_suggest` examples before/after
 - dry-run mode for `memory_remember`
+- progressive-disclosure tools/endpoints for compact search, full memory detail, lifecycle timeline, and evidence drill-down
 
 ### Should have
 
@@ -129,6 +134,9 @@ Goal: improve trust, auditability, and correctness of stored memory.
 
 - contradiction detection against existing memories
 - supersession recommendation flow
+- first-class auditable relations for conflicts, reinforcement, and supersession
+- stable `topic_key` support for evolving decisions/subjects
+- duplicate/revision metadata for memory hygiene
 - sensitive-data detection pass
 - policy config for auto-save vs confirm-save
 - memory approval queue in GUI

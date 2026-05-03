@@ -75,12 +75,61 @@ Acceptance:
 - Compare candidates against existing memories for same subject/scope/type.
 - Return `possible_conflicts`.
 - Recommend `remember` vs `supersede` vs `reject`.
+- Store conflict/supersession/reinforcement as first-class auditable relations when accepted.
 
 Acceptance:
 
 - Candidate contradicting an existing preference is not presented as a plain new memory.
 
+### MEM-001 — Topic keys, revisions, and dedupe metadata
+
+Adapt Engram's memory-hygiene pattern to canonical memories.
+
+- Add optional stable `topic_key` for evolving subjects/decisions.
+- Add duplicate detection metadata instead of repeated inserts.
+- Add visible revision/supersession counters or computed lifecycle summary.
+- Add helper to suggest canonical topic keys.
+
+Acceptance:
+
+- Repeated saves on the same evolving topic can update/supersede cleanly without polluting search results.
+
 ## P1 — Agent UX and installability
+
+### PKG-001 — GoReleaser release config
+
+Inspired by Engram's distribution path: one binary, release archives, checksums, and eventually Homebrew.
+
+- Add `.goreleaser.yaml` for `llm-memory` primary binary and supporting command binaries if kept separate.
+- Build Linux/macOS/Windows amd64/arm64.
+- Stamp version/commit/build date with ldflags.
+- Generate checksums.
+
+Acceptance:
+
+- A tagged release can produce archives without hand-written build commands.
+
+### AGENT-001 — One-command agent setup skeleton
+
+- Add `llm-memory setup <agent>` or `llm-memory integrate <agent>`.
+- Start with dry-run output for `openclaw`, `claude-code`, `codex`, and `generic-mcp`.
+- Include exact manual config snippets.
+- Refuse unsafe config writes unless explicitly confirmed.
+
+Acceptance:
+
+- A user can run one command and get either a safe generated config or exact copy/paste instructions.
+
+### AGENT-002 — Project/subject identity detection
+
+- Add helper command/API for current project/subject resolution.
+- Support repo-local `.llm-memory/config.json` for canonical project identity.
+- Return structured ambiguity errors instead of guessing.
+- Add later consolidation command for similar project names/subjects.
+
+Acceptance:
+
+- Agent integrations can verify the target subject/project before writing memory.
 
 ### CLI-001 — `version` command
 
@@ -182,6 +231,18 @@ Acceptance:
 Acceptance:
 
 - `/api/context` order is explainable.
+
+### RET-005 — Progressive disclosure API/MCP flow
+
+Adopt a compact-drilldown retrieval pattern.
+
+- Add/get documented flow for compact context, compact search, full memory detail, lifecycle timeline, and evidence chunks.
+- Consider MCP tools: `memory_get`, `memory_timeline`, `memory_evidence`.
+- Keep default context compact and token-budgeted.
+
+Acceptance:
+
+- Agent can retrieve small context first and drill into only the few memories/evidence items it needs.
 
 ### RET-002 — Token budget allocator
 

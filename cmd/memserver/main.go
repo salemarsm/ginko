@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/salemarsm/llm-memory/config"
+	"github.com/salemarsm/llm-memory/internal/version"
 	"github.com/salemarsm/llm-memory/memory"
 	"github.com/salemarsm/llm-memory/server"
 )
@@ -16,7 +17,13 @@ import (
 func main() {
 	configPath := flag.String("config", "", "path to JSON config")
 	writeConfig := flag.String("write-config", "", "write default JSON config and exit")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("memserver", version.String())
+		return
+	}
 
 	if *writeConfig != "" {
 		if err := config.WriteDefault(*writeConfig); err != nil {

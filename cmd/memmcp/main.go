@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/salemarsm/llm-memory/internal/version"
 	"github.com/salemarsm/llm-memory/memory"
 )
 
@@ -42,7 +43,13 @@ type mcpServer struct {
 
 func main() {
 	db := flag.String("db", envDefault("LLM_MEMORY_DB", "./memory.db"), "SQLite database path")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("memmcp", version.String())
+		return
+	}
 
 	store, err := memory.Open(*db)
 	if err != nil {
@@ -81,7 +88,7 @@ func (s *mcpServer) handle(req rpcRequest) rpcResponse {
 	case "initialize":
 		resp.Result = map[string]any{
 			"protocolVersion": "2024-11-05",
-			"serverInfo":      map[string]any{"name": "llm-memory", "version": "0.1.0"},
+			"serverInfo":      map[string]any{"name": "llm-memory", "version": version.Version},
 			"capabilities":    map[string]any{"tools": map[string]any{}},
 		}
 	case "tools/list":

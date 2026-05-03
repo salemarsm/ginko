@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="#english">English</a> · <a href="#português">Português</a> · <a href="docs/quickstart.md">Quickstart</a> · <a href="docs/openapi.yaml">OpenAPI</a>
+  <a href="#english">English</a> · <a href="#português">Português</a> · <a href="docs/quickstart.md">Quickstart</a> · <a href="docs/openapi.yaml">OpenAPI</a> · <a href="docs/competitive-engram.md">Engram comparison</a>
 </p>
 
 ---
@@ -111,6 +111,16 @@ SQLite      -> source of truth
 - memory suggestion flow
 - RAG document/chunk foundation
 - no CGO via `modernc.org/sqlite`
+
+## Positioning vs similar projects
+
+Projects like Mem0, Zep, LangMem, sqlite-memory, and Engram validate the category. `llm-memory` should not compete as a generic "memory layer" clone.
+
+The sharper niche is:
+
+> **Canonical local memory for coding agents and personal AI infrastructure.**
+
+See [Competitive analysis: Engram](docs/competitive-engram.md) for the closest direct comparison and the implementation practices we should borrow without losing this project's canonical-memory focus.
 
 ## 5-minute quickstart
 

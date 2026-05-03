@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/salemarsm/llm-memory/config"
+	"github.com/salemarsm/llm-memory/internal/version"
 )
 
 const defaultDirName = ".llm-memory"
@@ -35,6 +36,8 @@ func main() {
 		must(initProject(*homeDir))
 	case "doctor":
 		must(doctor(*homeDir))
+	case "version":
+		fmt.Println("llm-memory", version.String())
 	case "paths":
 		printPaths(*homeDir)
 	case "mcp-config":
@@ -239,6 +242,7 @@ func usage() {
 Commands:
   init                    create ~/.llm-memory/config.json and database path
   doctor                  check binaries, config, and port
+  version                 print version, commit, and build date
   paths                   print effective paths
   mcp-config              print MCP server JSON snippet
   install-mcp <target>    write MCP snippet for claude-code, codex, openclaw, or print
