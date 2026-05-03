@@ -93,10 +93,14 @@ func doctor(home string) error {
 			fmt.Printf("✓ %s: %s\n", bin, p)
 		}
 	}
-	if canListen("127.0.0.1:8787") {
-		fmt.Println("✓ port 127.0.0.1:8787 available")
+	addr := "127.0.0.1:8787"
+	if cfg, err := config.Load(configPath(home)); err == nil && cfg.Server.Addr != "" {
+		addr = cfg.Server.Addr
+	}
+	if canListen(addr) {
+		fmt.Println("✓ port", addr, "available")
 	} else {
-		fmt.Println("! port 127.0.0.1:8787 unavailable or already in use")
+		fmt.Println("! port", addr, "unavailable or already in use")
 	}
 	return nil
 }

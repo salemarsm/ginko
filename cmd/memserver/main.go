@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/salemarsm/llm-memory/config"
 	"github.com/salemarsm/llm-memory/memory"
@@ -39,5 +40,13 @@ func main() {
 	srv := server.New(store, cfg)
 	log.Printf("llm-memory listening on http://%s", cfg.Server.Addr)
 	log.Printf("database=%s llm=%s/%s embedding=%s/%s", cfg.Database.Path, cfg.LLM.Provider, cfg.LLM.Model, cfg.Embedding.Provider, cfg.Embedding.Model)
-	log.Fatal(http.ListenAndServe(cfg.Server.Addr, srv.Handler()))
+	httpServer := &http.Server{
+		Addr:              cfg.Server.Addr,
+		Handler:           srv.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	log.Fatal(httpServer.ListenAndServe())
 }

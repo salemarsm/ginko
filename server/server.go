@@ -27,24 +27,31 @@ func (s *Server) Handler() http.Handler { return s.mux }
 
 func (s *Server) routes() {
 	s.mux.HandleFunc("GET /", s.handleIndex)
-	s.mux.HandleFunc("GET /api/config", s.handleConfig)
-	s.mux.HandleFunc("GET /api/memories", s.handleSearchGET)
-	s.mux.HandleFunc("POST /api/memories", s.handleUpsertMemory)
-	s.mux.HandleFunc("GET /api/memories/{id}", s.handleGetMemory)
-	s.mux.HandleFunc("DELETE /api/memories/{id}", s.handleForget)
-	s.mux.HandleFunc("POST /api/search", s.handleSearchPOST)
-	s.mux.HandleFunc("POST /api/context", s.handleContext)
-	s.mux.HandleFunc("POST /api/suggest", s.handleSuggest)
-	s.mux.HandleFunc("POST /api/supersede/{id}", s.handleSupersede)
-	s.mux.HandleFunc("GET /api/events", s.handleEvents)
+	s.mux.HandleFunc("GET /healthz", s.handleHealthz)
+	for _, prefix := range []string{"/api", "/api/v1"} {
+		s.mux.HandleFunc("GET "+prefix+"/config", s.handleConfig)
+		s.mux.HandleFunc("GET "+prefix+"/memories", s.handleSearchGET)
+		s.mux.HandleFunc("POST "+prefix+"/memories", s.handleUpsertMemory)
+		s.mux.HandleFunc("GET "+prefix+"/memories/{id}", s.handleGetMemory)
+		s.mux.HandleFunc("DELETE "+prefix+"/memories/{id}", s.handleForget)
+		s.mux.HandleFunc("POST "+prefix+"/search", s.handleSearchPOST)
+		s.mux.HandleFunc("POST "+prefix+"/context", s.handleContext)
+		s.mux.HandleFunc("POST "+prefix+"/suggest", s.handleSuggest)
+		s.mux.HandleFunc("POST "+prefix+"/supersede/{id}", s.handleSupersede)
+		s.mux.HandleFunc("GET "+prefix+"/events", s.handleEvents)
+	}
+}
+
+func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"server":    s.cfg.Server,
-		"database":  s.cfg.Database,
-		"llm":       s.cfg.LLM,
-		"embedding": s.cfg.Embedding,
+		"server":    map[string]any{"addr": s.cfg.Server.Addr},
+		"database":  map[string]any{"path": s.cfg.Database.Path},
+		"llm":       map[string]any{"provider": s.cfg.LLM.Provider, "model": s.cfg.LLM.Model},
+		"embedding": map[string]any{"provider": s.cfg.Embedding.Provider, "model": s.cfg.Embedding.Model, "index": s.cfg.Embedding.Index},
 	})
 }
 

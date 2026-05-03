@@ -242,6 +242,8 @@ More: [Security](docs/security.md), [MCP transparent usage](docs/mcp.md), [Sugge
 
 The API is documented in [docs/openapi.yaml](docs/openapi.yaml).
 
+Core endpoints are available under `/api/...` and `/api/v1/...`; new integrations should prefer `/api/v1/...`.
+
 Core endpoints:
 
 | Endpoint | Purpose |
@@ -253,6 +255,7 @@ Core endpoints:
 | `POST /api/supersede/{id}` | replace stale memory |
 | `DELETE /api/memories/{id}` | forget memory |
 | `GET /api/events` | audit events |
+| `GET /healthz` | local health check |
 
 Example response from `POST /api/context`:
 
@@ -297,6 +300,12 @@ CREATE TABLE memories (
   superseded_by TEXT,
   tags_json TEXT NOT NULL DEFAULT '[]',
   embedding_refs_json TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE memory_tags (
+  memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+  tag TEXT NOT NULL,
+  PRIMARY KEY(memory_id, tag)
 );
 
 CREATE VIRTUAL TABLE memories_fts

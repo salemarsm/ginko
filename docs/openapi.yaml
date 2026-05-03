@@ -2,10 +2,16 @@ openapi: 3.0.3
 info:
   title: llm-memory API
   version: 0.1.0
-  description: Local-first canonical memory API for AI agents.
+  description: Local-first canonical memory API for AI agents. Endpoints are available under /api and /api/v1 during v0.x; prefer /api/v1 for new integrations.
 servers:
   - url: http://127.0.0.1:8787
 paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
   /api/config:
     get:
       summary: Get effective server configuration

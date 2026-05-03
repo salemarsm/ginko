@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
 
@@ -23,6 +24,8 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Keep a single connection until write concurrency policy is explicit. This avoids
+	// SQLITE_BUSY surprises with local SQLite writes; WAL is enabled in migrations for readers.
 	db.SetMaxOpenConns(1)
 
 	s := &Store{db: db}
@@ -38,14 +41,22 @@ func (s *Store) Close() error { return s.db.Close() }
 func (s *Store) Migrate(ctx context.Context) error {
 	stmts := []string{
 		`PRAGMA foreign_keys = ON;`,
+		`PRAGMA journal_mode = WAL;`,
+		`CREATE TABLE IF NOT EXISTS schema_migrations (
+			version INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			applied_at TEXT NOT NULL
+		);`,
 		`CREATE TABLE IF NOT EXISTS events (
 			id TEXT PRIMARY KEY,
+			memory_id TEXT,
 			kind TEXT NOT NULL,
 			payload TEXT NOT NULL,
 			source_kind TEXT NOT NULL,
 			source_ref TEXT NOT NULL,
 			created_at TEXT NOT NULL
 		);`,
+		`ALTER TABLE events ADD COLUMN memory_id TEXT;`,
 		`CREATE TABLE IF NOT EXISTS memories (
 			id TEXT PRIMARY KEY,
 			type TEXT NOT NULL,
@@ -67,6 +78,12 @@ func (s *Store) Migrate(ctx context.Context) error {
 		`CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(id UNINDEXED, content, subject, tags);`,
 		`CREATE INDEX IF NOT EXISTS idx_memories_type_scope ON memories(type, scope);`,
 		`CREATE INDEX IF NOT EXISTS idx_memories_subject ON memories(subject);`,
+		`CREATE TABLE IF NOT EXISTS memory_tags (
+			memory_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+			tag TEXT NOT NULL,
+			PRIMARY KEY(memory_id, tag)
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_memory_tags_tag ON memory_tags(tag);`,
 		`CREATE TABLE IF NOT EXISTS documents (
 			id TEXT PRIMARY KEY,
 			path TEXT NOT NULL,
@@ -94,10 +111,14 @@ func (s *Store) Migrate(ctx context.Context) error {
 	}
 	for _, stmt := range stmts {
 		if _, err := s.db.ExecContext(ctx, stmt); err != nil {
+			if strings.Contains(err.Error(), "duplicate column name") {
+				continue
+			}
 			return err
 		}
 	}
-	return nil
+	_, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO schema_migrations(version, name, applied_at) VALUES (1, 'bootstrap', ?)`, formatTime(time.Now().UTC()))
+	return err
 }
 
 func (s *Store) AppendEvent(ctx context.Context, e Event) error {
@@ -107,8 +128,8 @@ func (s *Store) AppendEvent(ctx context.Context, e Event) error {
 	if e.CreatedAt.IsZero() {
 		e.CreatedAt = time.Now().UTC()
 	}
-	_, err := s.db.ExecContext(ctx, `INSERT INTO events(id, kind, payload, source_kind, source_ref, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		e.ID, e.Kind, e.Payload, e.Source.Kind, e.Source.Ref, formatTime(e.CreatedAt))
+	_, err := s.db.ExecContext(ctx, `INSERT INTO events(id, memory_id, kind, payload, source_kind, source_ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		e.ID, nullableString(e.MemoryID), e.Kind, e.Payload, e.Source.Kind, e.Source.Ref, formatTime(e.CreatedAt))
 	return err
 }
 
@@ -116,6 +137,19 @@ func (s *Store) UpsertMemory(ctx context.Context, m Memory) (Memory, error) {
 	if err := validateMemory(m); err != nil {
 		return Memory{}, err
 	}
+	m = prepareMemoryForWrite(m, nil)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Memory{}, err
+	}
+	defer tx.Rollback()
+	if err := upsertMemoryTx(ctx, tx, m); err != nil {
+		return Memory{}, err
+	}
+	return m, tx.Commit()
+}
+
+func prepareMemoryForWrite(m Memory, supersedes *string) Memory {
 	if m.ID == "" {
 		m.ID = newID("mem")
 	}
@@ -124,21 +158,27 @@ func (s *Store) UpsertMemory(ctx context.Context, m Memory) (Memory, error) {
 		m.CreatedAt = now
 	}
 	m.UpdatedAt = now
+	if supersedes != nil {
+		m.SupersedesID = supersedes
+	}
 	if m.Tags == nil {
 		m.Tags = []string{}
 	}
 	if m.EmbeddingRefs == nil {
 		m.EmbeddingRefs = EmbeddingRefs{}
 	}
-	tags, _ := json.Marshal(m.Tags)
-	embeds, _ := json.Marshal(m.EmbeddingRefs)
+	return m
+}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+func upsertMemoryTx(ctx context.Context, tx *sql.Tx, m Memory) error {
+	tags, err := json.Marshal(m.Tags)
 	if err != nil {
-		return Memory{}, err
+		return err
 	}
-	defer tx.Rollback()
-
+	embeds, err := json.Marshal(m.EmbeddingRefs)
+	if err != nil {
+		return err
+	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO memories(
 		id, type, subject, content, source_kind, source_ref, scope, confidence,
 		created_at, updated_at, valid_from, valid_until, supersedes_id, superseded_by,
@@ -163,18 +203,27 @@ func (s *Store) UpsertMemory(ctx context.Context, m Memory) (Memory, error) {
 		formatTime(m.CreatedAt), formatTime(m.UpdatedAt), nullableTime(m.ValidFrom), nullableTime(m.ValidUntil), nullableString(m.SupersedesID), nullableString(m.SupersededBy),
 		string(tags), string(embeds))
 	if err != nil {
-		return Memory{}, err
+		return err
 	}
-
-	_, err = tx.ExecContext(ctx, `DELETE FROM memories_fts WHERE id = ?`, m.ID)
-	if err != nil {
-		return Memory{}, err
+	if _, err := tx.ExecContext(ctx, `DELETE FROM memories_fts WHERE id = ?`, m.ID); err != nil {
+		return err
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO memories_fts(id, content, subject, tags) VALUES (?, ?, ?, ?)`, m.ID, m.Content, m.Subject, strings.Join(m.Tags, " "))
-	if err != nil {
-		return Memory{}, err
+	if _, err := tx.ExecContext(ctx, `INSERT INTO memories_fts(id, content, subject, tags) VALUES (?, ?, ?, ?)`, m.ID, m.Content, m.Subject, strings.Join(m.Tags, " ")); err != nil {
+		return err
 	}
-	return m, tx.Commit()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM memory_tags WHERE memory_id = ?`, m.ID); err != nil {
+		return err
+	}
+	for _, tag := range m.Tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO memory_tags(memory_id, tag) VALUES (?, ?)`, m.ID, tag); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) GetMemory(ctx context.Context, id string) (Memory, error) {
@@ -219,8 +268,8 @@ func (s *Store) Search(ctx context.Context, q Query) ([]Memory, error) {
 		}
 	}
 	for _, tag := range q.Tags {
-		where = append(where, "m.tags_json LIKE ?")
-		args = append(args, "%\""+tag+"\"%")
+		where = append(where, "EXISTS (SELECT 1 FROM memory_tags mt WHERE mt.memory_id = m.id AND mt.tag = ?)")
+		args = append(args, tag)
 	}
 	args = append(args, limit)
 
@@ -242,17 +291,32 @@ func (s *Store) Search(ctx context.Context, q Query) ([]Memory, error) {
 }
 
 func (s *Store) Supersede(ctx context.Context, oldID string, newer Memory) (Memory, error) {
-	old, err := s.GetMemory(ctx, oldID)
+	if err := validateMemory(newer); err != nil {
+		return Memory{}, err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return Memory{}, err
 	}
-	newer.SupersedesID = &old.ID
-	created, err := s.UpsertMemory(ctx, newer)
+	defer tx.Rollback()
+
+	row := tx.QueryRowContext(ctx, `SELECT id, type, subject, content, source_kind, source_ref, scope, confidence, created_at, updated_at, valid_from, valid_until, supersedes_id, superseded_by, tags_json, embedding_refs_json FROM memories WHERE id = ?`, oldID)
+	old, err := scanMemory(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Memory{}, ErrNotFound
+	}
 	if err != nil {
 		return Memory{}, err
 	}
-	_, err = s.db.ExecContext(ctx, `UPDATE memories SET superseded_by = ?, updated_at = ? WHERE id = ?`, created.ID, formatTime(time.Now().UTC()), oldID)
-	return created, err
+
+	newer = prepareMemoryForWrite(newer, &old.ID)
+	if err := upsertMemoryTx(ctx, tx, newer); err != nil {
+		return Memory{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE memories SET superseded_by = ?, updated_at = ? WHERE id = ?`, newer.ID, formatTime(time.Now().UTC()), oldID); err != nil {
+		return Memory{}, err
+	}
+	return newer, tx.Commit()
 }
 
 func (s *Store) Forget(ctx context.Context, id string) error {
@@ -279,7 +343,7 @@ func (s *Store) ListEvents(ctx context.Context, limit int) ([]Event, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id, kind, payload, source_kind, source_ref, created_at FROM events ORDER BY created_at DESC LIMIT ?`, limit)
+	rows, err := s.db.QueryContext(ctx, `SELECT id, memory_id, kind, payload, source_kind, source_ref, created_at FROM events ORDER BY created_at DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -289,10 +353,18 @@ func (s *Store) ListEvents(ctx context.Context, limit int) ([]Event, error) {
 	for rows.Next() {
 		var e Event
 		var created string
-		if err := rows.Scan(&e.ID, &e.Kind, &e.Payload, &e.Source.Kind, &e.Source.Ref, &created); err != nil {
+		var memoryID sql.NullString
+		if err := rows.Scan(&e.ID, &memoryID, &e.Kind, &e.Payload, &e.Source.Kind, &e.Source.Ref, &created); err != nil {
 			return nil, err
 		}
-		e.CreatedAt = parseTime(created)
+		if memoryID.Valid {
+			e.MemoryID = &memoryID.String
+		}
+		t, err := parseTime(created)
+		if err != nil {
+			return nil, err
+		}
+		e.CreatedAt = t
 		out = append(out, e)
 	}
 	return out, rows.Err()
@@ -318,14 +390,27 @@ func scanMemory(rows scanner) (Memory, error) {
 	if err := rows.Scan(&m.ID, &m.Type, &m.Subject, &m.Content, &m.Source.Kind, &m.Source.Ref, &m.Scope, &m.Confidence, &created, &updated, &validFrom, &validUntil, &supersedes, &supersededBy, &tagsJSON, &embedsJSON); err != nil {
 		return Memory{}, err
 	}
-	m.CreatedAt = parseTime(created)
-	m.UpdatedAt = parseTime(updated)
+	var err error
+	m.CreatedAt, err = parseTime(created)
+	if err != nil {
+		return Memory{}, err
+	}
+	m.UpdatedAt, err = parseTime(updated)
+	if err != nil {
+		return Memory{}, err
+	}
 	if validFrom.Valid {
-		t := parseTime(validFrom.String)
+		t, err := parseTime(validFrom.String)
+		if err != nil {
+			return Memory{}, err
+		}
 		m.ValidFrom = &t
 	}
 	if validUntil.Valid {
-		t := parseTime(validUntil.String)
+		t, err := parseTime(validUntil.String)
+		if err != nil {
+			return Memory{}, err
+		}
 		m.ValidUntil = &t
 	}
 	if supersedes.Valid {
@@ -334,8 +419,12 @@ func scanMemory(rows scanner) (Memory, error) {
 	if supersededBy.Valid {
 		m.SupersededBy = &supersededBy.String
 	}
-	_ = json.Unmarshal([]byte(tagsJSON), &m.Tags)
-	_ = json.Unmarshal([]byte(embedsJSON), &m.EmbeddingRefs)
+	if err := json.Unmarshal([]byte(tagsJSON), &m.Tags); err != nil {
+		return Memory{}, err
+	}
+	if err := json.Unmarshal([]byte(embedsJSON), &m.EmbeddingRefs); err != nil {
+		return Memory{}, err
+	}
 	return m, nil
 }
 
@@ -347,9 +436,9 @@ func placeholders(n int) string {
 	return strings.Join(p, ",")
 }
 
-func newID(prefix string) string    { return fmt.Sprintf("%s_%d", prefix, time.Now().UTC().UnixNano()) }
-func formatTime(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
-func parseTime(s string) time.Time  { t, _ := time.Parse(time.RFC3339Nano, s); return t }
+func newID(prefix string) string            { return fmt.Sprintf("%s_%s", prefix, uuid.NewString()) }
+func formatTime(t time.Time) string         { return t.UTC().Format(time.RFC3339Nano) }
+func parseTime(s string) (time.Time, error) { return time.Parse(time.RFC3339Nano, s) }
 func nullableTime(t *time.Time) any {
 	if t == nil {
 		return nil

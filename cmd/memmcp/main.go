@@ -56,6 +56,7 @@ func main() {
 
 func (s *mcpServer) run() {
 	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		var req rpcRequest
@@ -68,6 +69,9 @@ func (s *mcpServer) run() {
 		}
 		resp := s.handle(req)
 		writeResp(resp)
+	}
+	if err := scanner.Err(); err != nil {
+		writeResp(rpcResponse{JSONRPC: "2.0", Error: &rpcError{Code: -32000, Message: err.Error()}})
 	}
 }
 

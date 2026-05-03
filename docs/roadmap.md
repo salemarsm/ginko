@@ -45,6 +45,13 @@ Status: **mostly implemented**.
 - OpenAPI draft
 - documentation split under `docs/`
 - alpha tag: `v0.1.0-alpha.1`
+- UUID-based IDs [post-alpha]
+- atomic supersession [post-alpha]
+- normalized `memory_tags` table [post-alpha]
+- `/healthz` endpoint [post-alpha]
+- HTTP server timeouts [post-alpha]
+- MCP scanner buffer increased for larger payloads [post-alpha]
+- `/api/v1` aliases [post-alpha]
 
 ### Remaining v0.1 polish
 

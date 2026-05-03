@@ -57,6 +57,7 @@ type Memory struct {
 // Event is append-only raw history. Canonical memories may be derived from it.
 type Event struct {
 	ID        string    `json:"id"`
+	MemoryID  *string   `json:"memory_id,omitempty"`
 	Kind      string    `json:"kind"`
 	Payload   string    `json:"payload"`
 	Source    Source    `json:"source"`

@@ -9,6 +9,22 @@ Legend:
 - P2: quality/ecosystem
 - P3: later/optional
 
+## Completed hardening items
+
+These came from early code review feedback and are already implemented after `v0.1.0-alpha.1`:
+
+- UUID IDs instead of timestamp IDs.
+- Atomic `Supersede` transaction.
+- Normalized `memory_tags` table for exact tag lookup.
+- `schema_migrations` bootstrap table.
+- `events.memory_id` nullable column.
+- MCP scanner buffer raised to 10 MiB.
+- HTTP server timeouts.
+- `/healthz`.
+- `/api/v1` aliases while preserving `/api`.
+- Public `/api/config` no longer returns `api_key_env`.
+
+
 ## P0 — Safety, correctness, and release hygiene
 
 ### AUTH-001 — API token support
@@ -288,11 +304,11 @@ Acceptance:
 
 1. AUTH-001
 2. REL-001
-3. CLI-001
-4. CLI-002
-5. SUG-001
-6. UX-001
-7. RAG-001
-8. RAG-003
-9. RET-001
-10. RET-004
+3. REL-002
+4. CLI-001
+5. CLI-002
+6. SUG-001
+7. UX-001
+8. RAG-001
+9. RAG-003
+10. RET-001
