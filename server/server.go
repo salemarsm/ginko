@@ -33,6 +33,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/memories/{id}", s.handleGetMemory)
 	s.mux.HandleFunc("DELETE /api/memories/{id}", s.handleForget)
 	s.mux.HandleFunc("POST /api/search", s.handleSearchPOST)
+	s.mux.HandleFunc("POST /api/context", s.handleContext)
 	s.mux.HandleFunc("POST /api/supersede/{id}", s.handleSupersede)
 	s.mux.HandleFunc("GET /api/events", s.handleEvents)
 }
@@ -78,6 +79,20 @@ func (s *Server) handleSearchPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) handleContext(w http.ResponseWriter, r *http.Request) {
+	var req memory.ContextRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorStatus(w, http.StatusBadRequest, err)
+		return
+	}
+	resp, err := s.store.BuildContext(r.Context(), req)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *Server) handleUpsertMemory(w http.ResponseWriter, r *http.Request) {

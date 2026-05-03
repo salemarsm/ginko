@@ -194,6 +194,71 @@ curl http://127.0.0.1:8787/api/events?limit=50
 curl http://127.0.0.1:8787/api/config
 ```
 
+
+### Token-budgeted agent context
+
+For OpenClaw, Claude Code, Codex, and other agent runtimes, prefer `/api/context` over raw `/api/search`.
+
+`/api/context` returns a compact prompt-ready memory block under a token budget. This avoids dumping raw memory records or documents into the model context.
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/context \
+  -H 'content-type: application/json' \
+  -d '{
+    "query": "how should this agent answer the user?",
+    "subject": "botmaster",
+    "scopes": ["global", "project"],
+    "max_tokens": 1200
+  }'
+```
+
+Response:
+
+```json
+{
+  "context": "- [preference/global conf=0.95 src=conversation:msg-123] Prefers direct answers...",
+  "estimated_tokens": 83,
+  "budget_tokens": 1200,
+  "truncated": false
+}
+```
+
+### CLI for agents
+
+`memctl` is the universal low-friction integration path for coding agents and shells.
+
+```bash
+go build -o bin/memctl ./cmd/memctl
+
+# Store memory
+echo "Prefers direct, technical answers." | bin/memctl -subject botmaster -scope global -type preference remember
+
+# Search raw memories
+bin/memctl -subject botmaster search "technical answers"
+
+# Get compact context for a prompt
+bin/memctl -subject botmaster -scope global,project -max-tokens 800 context "how should I answer?"
+```
+
+### RAG foundation
+
+The database now includes document/chunk tables for a Docling-based RAG pipeline:
+
+```txt
+PDF/DOCX/HTML
+  -> Docling
+  -> Markdown/JSON
+  -> chunks
+  -> document evidence
+  -> extracted canonical memory candidates
+```
+
+Important separation:
+
+- `memories` are canonical, compact, agent-ready facts/preferences/decisions.
+- `documents` and `chunks` are evidence for RAG and citations.
+- embeddings remain optional indexes, never the source of truth.
+
 ### Go API
 
 ```go
@@ -465,6 +530,55 @@ curl http://127.0.0.1:8787/api/events?limit=50
 ```bash
 curl http://127.0.0.1:8787/api/config
 ```
+
+
+### Contexto com orçamento de tokens
+
+Para OpenClaw, Claude Code, Codex e outros runtimes de agente, prefira `/api/context` em vez de `/api/search` bruto.
+
+`/api/context` retorna um bloco de memória compacto, pronto para prompt, respeitando um orçamento de tokens. Isso evita jogar memórias/documentos crus dentro do contexto do modelo.
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/context \
+  -H 'content-type: application/json' \
+  -d '{
+    "query": "como este agente deve responder ao usuário?",
+    "subject": "botmaster",
+    "scopes": ["global", "project"],
+    "max_tokens": 1200
+  }'
+```
+
+### CLI para agentes
+
+`memctl` é o caminho universal e barato para integrar shells e coding agents.
+
+```bash
+go build -o bin/memctl ./cmd/memctl
+
+echo "Prefere respostas diretas e técnicas." | bin/memctl -subject botmaster -scope global -type preference remember
+bin/memctl -subject botmaster search "respostas técnicas"
+bin/memctl -subject botmaster -scope global,project -max-tokens 800 context "como devo responder?"
+```
+
+### Base RAG
+
+O banco agora inclui tabelas `documents` e `chunks` para um pipeline RAG com Docling:
+
+```txt
+PDF/DOCX/HTML
+  -> Docling
+  -> Markdown/JSON
+  -> chunks
+  -> evidência documental
+  -> candidatos de memória canônica
+```
+
+Separação importante:
+
+- `memories` são fatos/preferências/decisões compactos e prontos para agente.
+- `documents` e `chunks` são evidência para RAG e citações.
+- embeddings continuam sendo índices opcionais, nunca fonte da verdade.
 
 ### API Go
 

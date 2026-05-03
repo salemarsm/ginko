@@ -67,6 +67,30 @@ func (s *Store) Migrate(ctx context.Context) error {
 		`CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(id UNINDEXED, content, subject, tags);`,
 		`CREATE INDEX IF NOT EXISTS idx_memories_type_scope ON memories(type, scope);`,
 		`CREATE INDEX IF NOT EXISTS idx_memories_subject ON memories(subject);`,
+		`CREATE TABLE IF NOT EXISTS documents (
+			id TEXT PRIMARY KEY,
+			path TEXT NOT NULL,
+			title TEXT NOT NULL,
+			source_kind TEXT NOT NULL,
+			source_ref TEXT NOT NULL,
+			sha256 TEXT NOT NULL UNIQUE,
+			created_at TEXT NOT NULL
+		);`,
+		`CREATE TABLE IF NOT EXISTS chunks (
+			id TEXT PRIMARY KEY,
+			document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+			ordinal INTEGER NOT NULL,
+			heading_path TEXT NOT NULL,
+			content TEXT NOT NULL,
+			token_count INTEGER NOT NULL,
+			page_from INTEGER,
+			page_to INTEGER,
+			embedding_refs_json TEXT NOT NULL DEFAULT '{}',
+			created_at TEXT NOT NULL,
+			UNIQUE(document_id, ordinal)
+		);`,
+		`CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(id UNINDEXED, document_id UNINDEXED, heading_path, content);`,
+		`CREATE INDEX IF NOT EXISTS idx_chunks_document ON chunks(document_id, ordinal);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.db.ExecContext(ctx, stmt); err != nil {

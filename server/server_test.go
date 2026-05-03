@@ -35,6 +35,13 @@ func TestAPIAndGUI(t *testing.T) {
 		t.Fatalf("POST /api/search status=%d body=%s", rec.Code, rec.Body.String())
 	}
 
+	req = httptest.NewRequest(http.MethodPost, "/api/context", bytes.NewBufferString(`{"query":"teste","subject":"smoke","max_tokens":200}`))
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "teste api gui") || !strings.Contains(rec.Body.String(), "estimated_tokens") {
+		t.Fatalf("POST /api/context status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
