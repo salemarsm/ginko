@@ -69,9 +69,9 @@ Goal: make the project safe and easy enough for real local agent workflows.
 
 ### Must have
 
-- API token support for HTTP API
-- `llm-memory token create/list/revoke`
-- config support for auth settings
+- API token support for HTTP API [implemented]
+- `llm-memory token create/list/revoke` [implemented]
+- config support for auth settings [implemented]
 - MCP auth propagation where relevant
 - `install.sh` for local binary install
 - release builds attached to GitHub releases
@@ -81,8 +81,8 @@ Goal: make the project safe and easy enough for real local agent workflows.
 
 ### Should have
 
-- improved `doctor` with actionable fixes
-- read-only doctor plus explicit repair commands
+- improved `doctor` with actionable fixes [started]
+- read-only doctor plus explicit repair commands [started]
 - port conflict detection with suggestions
 - config validation command
 - structured logging

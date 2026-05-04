@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -36,6 +38,8 @@ func main() {
 		must(initProject(*homeDir))
 	case "doctor":
 		must(doctor(*homeDir))
+	case "token":
+		must(tokenCommand(*homeDir, args))
 	case "version":
 		fmt.Println("llm-memory", version.String())
 	case "paths":
@@ -77,35 +81,112 @@ func initProject(home string) error {
 func doctor(home string) error {
 	fmt.Println("llm-memory doctor")
 	fmt.Println("home:", home)
-	checks := []struct{ name, path string }{
-		{"config", configPath(home)},
-		{"database dir", home},
+	cfgPath := configPath(home)
+	if _, err := os.Stat(home); err != nil {
+		fmt.Printf("✗ home dir: %s\n  fix: llm-memory -home %q init\n", err, home)
+	} else {
+		fmt.Println("✓ home dir:", home)
 	}
-	for _, c := range checks {
-		if _, err := os.Stat(c.path); err != nil {
-			fmt.Printf("✗ %s: %s\n", c.name, err)
-		} else {
-			fmt.Printf("✓ %s: %s\n", c.name, c.path)
-		}
+	if _, err := os.Stat(cfgPath); err != nil {
+		fmt.Printf("✗ config: %s\n  fix: llm-memory -home %q init\n", err, home)
+	} else {
+		fmt.Println("✓ config:", cfgPath)
+	}
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		fmt.Printf("✗ config valid: %s\n  fix: edit %s or run llm-memory -home %q init on a clean home\n", err, cfgPath, home)
+		cfg = config.Default()
+	} else {
+		fmt.Println("✓ config valid")
+	}
+	if config.IsLoopbackAddr(cfg.Server.Addr) {
+		fmt.Println("✓ auth policy: loopback no-auth allowed")
+	} else if _, ok := cfg.Server.BearerToken(); ok {
+		fmt.Println("✓ auth policy: non-loopback bind has bearer token")
+	} else {
+		fmt.Println("✗ auth policy: non-loopback bind requires server.auth_token_env or server.auth_token")
 	}
 	for _, bin := range []string{"memserver", "memmcp", "memctl"} {
 		p, err := findSibling(bin)
 		if err != nil {
-			fmt.Printf("✗ %s: %s\n", bin, err)
+			fmt.Printf("✗ %s: %s\n  fix: run make build or install release artifacts\n", bin, err)
 		} else {
 			fmt.Printf("✓ %s: %s\n", bin, p)
 		}
 	}
-	addr := "127.0.0.1:8787"
-	if cfg, err := config.Load(configPath(home)); err == nil && cfg.Server.Addr != "" {
-		addr = cfg.Server.Addr
-	}
-	if canListen(addr) {
-		fmt.Println("✓ port", addr, "available")
+	if canListen(cfg.Server.Addr) {
+		fmt.Println("✓ port", cfg.Server.Addr, "available")
 	} else {
-		fmt.Println("! port", addr, "unavailable or already in use")
+		fmt.Println("! port", cfg.Server.Addr, "unavailable or already in use")
+		fmt.Println("  fix: stop the running service or change server.addr in", cfgPath)
 	}
 	return nil
+}
+
+func tokenCommand(home string, args []string) error {
+	if len(args) < 1 {
+		return errors.New("token requires subcommand: create, list, revoke")
+	}
+	if err := initProject(home); err != nil {
+		return err
+	}
+	cfgPath := configPath(home)
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		return err
+	}
+	switch args[0] {
+	case "create":
+		token, err := randomToken()
+		if err != nil {
+			return err
+		}
+		cfg.Server.AuthToken = token
+		cfg.Server.AuthTokenEnv = ""
+		if err := writeConfig(cfgPath, cfg); err != nil {
+			return err
+		}
+		fmt.Println(token)
+		fmt.Fprintln(os.Stderr, "✓ wrote server.auth_token to", cfgPath)
+	case "list":
+		if cfg.Server.AuthToken != "" {
+			fmt.Println("auth_token: configured")
+		} else {
+			fmt.Println("auth_token: not configured")
+		}
+		if cfg.Server.AuthTokenEnv != "" {
+			_, ok := cfg.Server.BearerToken()
+			fmt.Printf("auth_token_env: %s (set=%v)\n", cfg.Server.AuthTokenEnv, ok)
+		} else {
+			fmt.Println("auth_token_env: not configured")
+		}
+	case "revoke":
+		cfg.Server.AuthToken = ""
+		cfg.Server.AuthTokenEnv = ""
+		if err := writeConfig(cfgPath, cfg); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "✓ cleared server auth token config in", cfgPath)
+	default:
+		return fmt.Errorf("unknown token subcommand %q", args[0])
+	}
+	return nil
+}
+
+func randomToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func writeConfig(path string, cfg config.Config) error {
+	b, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, append(b, '\n'), 0o600)
 }
 
 func printPaths(home string) {
@@ -241,7 +322,8 @@ func usage() {
 
 Commands:
   init                    create ~/.llm-memory/config.json and database path
-  doctor                  check binaries, config, and port
+  doctor                  check binaries, config, auth policy, and port
+  token create|list|revoke manage local API bearer token config
   version                 print version, commit, and build date
   paths                   print effective paths
   mcp-config              print MCP server JSON snippet

@@ -23,6 +23,7 @@ func main() {
 	maxTokens := flag.Int("max-tokens", 1200, "context token budget")
 	jsonOut := flag.Bool("json", false, "print raw JSON")
 	showVersion := flag.Bool("version", false, "print version and exit")
+	token := flag.String("token", envDefault("LLM_MEMORY_API_TOKEN", ""), "bearer token or LLM_MEMORY_API_TOKEN")
 	flag.Parse()
 
 	if *showVersion {
@@ -40,12 +41,12 @@ func main() {
 	case "search":
 		query := strings.Join(flag.Args()[1:], " ")
 		var out []memory.Memory
-		post(*addr+"/api/search", memory.Query{Text: query, Subject: *subject, Scopes: scopes(*scope), Limit: 20}, &out)
+		post(*addr+"/api/search", *token, memory.Query{Text: query, Subject: *subject, Scopes: scopes(*scope), Limit: 20}, &out)
 		printJSONOrText(*jsonOut, out, func() { printMemories(out) })
 	case "context":
 		query := strings.Join(flag.Args()[1:], " ")
 		var out memory.ContextResponse
-		post(*addr+"/api/context", memory.ContextRequest{Query: query, Subject: *subject, Scopes: scopes(*scope), MaxTokens: *maxTokens}, &out)
+		post(*addr+"/api/context", *token, memory.ContextRequest{Query: query, Subject: *subject, Scopes: scopes(*scope), MaxTokens: *maxTokens}, &out)
 		printJSONOrText(*jsonOut, out, func() { fmt.Println(out.Context) })
 	case "suggest":
 		prompt := strings.Join(flag.Args()[1:], " ")
@@ -54,7 +55,7 @@ func main() {
 			prompt = strings.TrimSpace(string(b))
 		}
 		var out memory.SuggestResponse
-		post(*addr+"/api/suggest", memory.SuggestRequest{Subject: *subject, Scope: memory.Scope(*scope), UserPrompt: prompt, MaxCandidates: 5}, &out)
+		post(*addr+"/api/suggest", *token, memory.SuggestRequest{Subject: *subject, Scope: memory.Scope(*scope), UserPrompt: prompt, MaxCandidates: 5}, &out)
 		printJSONOrText(*jsonOut, out, func() {
 			for _, c := range out.Candidates {
 				fmt.Printf("[%s %.2f] %s\nreason: %s\n\n", c.Memory.Type, c.Memory.Confidence, c.Memory.Content, c.Reason)
@@ -63,7 +64,7 @@ func main() {
 	case "chunks":
 		query := strings.Join(flag.Args()[1:], " ")
 		var out []memory.ChunkSearchResult
-		post(*addr+"/api/chunks/search", memory.ChunkSearchRequest{Text: query, Limit: 20}, &out)
+		post(*addr+"/api/chunks/search", *token, memory.ChunkSearchRequest{Text: query, Limit: 20}, &out)
 		printJSONOrText(*jsonOut, out, func() {
 			for _, r := range out {
 				fmt.Printf("%s %s [%s] %.3f\n%s\n\n", r.Chunk.ID, r.Document.Title, r.Document.Path, r.Score, r.Chunk.Content)
@@ -74,7 +75,7 @@ func main() {
 			log.Fatal("ingest requires file or directory path")
 		}
 		var out memory.IngestResponse
-		post(*addr+"/api/ingest", memory.IngestRequest{Path: flag.Arg(1), Recursive: true}, &out)
+		post(*addr+"/api/ingest", *token, memory.IngestRequest{Path: flag.Arg(1), Recursive: true}, &out)
 		printJSONOrText(*jsonOut, out, func() {
 			fmt.Printf("%s %s: %d documents, %d chunks, %d skipped\n", out.Run.ID, out.Run.Status, len(out.Documents), len(out.Chunks), len(out.Skipped))
 			for _, s := range out.Skipped {
@@ -89,7 +90,7 @@ func main() {
 		}
 		m := memory.Memory{Type: memory.MemoryType(*typ), Subject: *subject, Content: content, Source: memory.Source{Kind: "memctl", Ref: "cli"}, Scope: memory.Scope(*scope), Confidence: 0.9, Tags: []string{"cli"}, EmbeddingRefs: memory.EmbeddingRefs{}}
 		var out memory.Memory
-		post(*addr+"/api/memories", m, &out)
+		post(*addr+"/api/memories", *token, m, &out)
 		printJSONOrText(*jsonOut, out, func() { fmt.Println(out.ID) })
 	case "forget":
 		if flag.NArg() < 2 {
@@ -97,6 +98,7 @@ func main() {
 		}
 		id := flag.Arg(1)
 		req, _ := http.NewRequest(http.MethodDelete, strings.TrimRight(*addr, "/")+"/api/memories/"+id, nil)
+		setBearer(req, *token)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.Fatal(err)
@@ -113,9 +115,15 @@ func main() {
 	}
 }
 
-func post(url string, in any, out any) {
+func post(url string, token string, in any, out any) {
 	b, _ := json.Marshal(in)
-	resp, err := http.Post(url, "application/json", bytes.NewReader(b))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(b))
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	setBearer(req, token)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,6 +134,12 @@ func post(url string, in any, out any) {
 	}
 	if err := json.Unmarshal(body, out); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func setBearer(req *http.Request, token string) {
+	if strings.TrimSpace(token) != "" {
+		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
 	}
 }
 
@@ -184,5 +198,6 @@ Flags:
   -scope LIST          comma scopes, default global
   -type TYPE           memory type for remember, default note
   -max-tokens N        context budget, default 1200
+  -token TOKEN         bearer token or LLM_MEMORY_API_TOKEN
   -json                raw JSON output`)
 }
