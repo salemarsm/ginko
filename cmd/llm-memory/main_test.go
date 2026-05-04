@@ -10,6 +10,46 @@ import (
 	"github.com/salemarsm/llm-memory/config"
 )
 
+func TestTokenCreateHelpDoesNotMutateConfig(t *testing.T) {
+	home := t.TempDir()
+	if err := tokenCommand(home, []string{"create", "--help"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(configPath(home)); !os.IsNotExist(err) {
+		t.Fatalf("token create --help must not create config, stat err=%v", err)
+	}
+}
+
+func TestTokenTopLevelHelpDoesNotMutateConfig(t *testing.T) {
+	home := t.TempDir()
+	if err := tokenCommand(home, []string{"--help"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(configPath(home)); !os.IsNotExist(err) {
+		t.Fatalf("token --help must not create config, stat err=%v", err)
+	}
+}
+
+func TestSetupClaudeCodeHelpDoesNotMutateConfig(t *testing.T) {
+	home := t.TempDir()
+	if err := setupCommand(home, []string{"claude-code", "--help"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(configPath(home)); !os.IsNotExist(err) {
+		t.Fatalf("setup claude-code --help must not create config, stat err=%v", err)
+	}
+}
+
+func TestSetupTopLevelHelpDoesNotMutateConfig(t *testing.T) {
+	home := t.TempDir()
+	if err := setupCommand(home, []string{"--help"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(configPath(home)); !os.IsNotExist(err) {
+		t.Fatalf("setup --help must not create config, stat err=%v", err)
+	}
+}
+
 func TestTokenCreateListRevoke(t *testing.T) {
 	home := t.TempDir()
 	if err := tokenCommand(home, []string{"create"}); err != nil {

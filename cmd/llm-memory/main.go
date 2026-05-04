@@ -127,8 +127,14 @@ func doctor(home string) error {
 }
 
 func tokenCommand(home string, args []string) error {
-	if len(args) < 1 {
-		return errors.New("token requires subcommand: create, list, revoke")
+	if len(args) < 1 || isHelpArg(args[0]) {
+		printTokenUsage()
+		return nil
+	}
+	subcmd := args[0]
+	if hasHelpFlag(args[1:]) {
+		printTokenSubcommandUsage(subcmd)
+		return nil
 	}
 	if err := initProject(home); err != nil {
 		return err
@@ -138,7 +144,7 @@ func tokenCommand(home string, args []string) error {
 	if err != nil {
 		return err
 	}
-	switch args[0] {
+	switch subcmd {
 	case "create":
 		token, err := randomToken()
 		if err != nil {
@@ -171,9 +177,43 @@ func tokenCommand(home string, args []string) error {
 		}
 		fmt.Fprintln(os.Stderr, "✓ cleared server auth token config in", cfgPath)
 	default:
-		return fmt.Errorf("unknown token subcommand %q", args[0])
+		return fmt.Errorf("unknown token subcommand %q", subcmd)
 	}
 	return nil
+}
+
+func printTokenUsage() {
+	fmt.Fprintln(os.Stderr, `llm-memory token <subcommand>
+
+Subcommands:
+  create    generate and store a local bearer token in server.auth_token
+  list      show whether token auth is configured without printing secrets
+  revoke    clear server.auth_token and server.auth_token_env
+
+Examples:
+  llm-memory token create
+  llm-memory token list
+  llm-memory token revoke`)
+}
+
+func printTokenSubcommandUsage(subcmd string) {
+	switch subcmd {
+	case "create":
+		fmt.Fprintln(os.Stderr, `llm-memory token create
+
+Generate a cryptographically random bearer token and store it in server.auth_token.
+The token is printed once on stdout. This command mutates ~/.ginko/config.json unless -home is supplied.`)
+	case "list":
+		fmt.Fprintln(os.Stderr, `llm-memory token list
+
+Show whether server.auth_token or server.auth_token_env is configured. Secret token values are not printed.`)
+	case "revoke":
+		fmt.Fprintln(os.Stderr, `llm-memory token revoke
+
+Clear server.auth_token and server.auth_token_env from config.`)
+	default:
+		printTokenUsage()
+	}
 }
 
 func randomToken() (string, error) {
@@ -213,14 +253,18 @@ func printMCPConfig(home string) error {
 }
 
 func setupCommand(home string, args []string) error {
-	if len(args) < 1 {
-		return errors.New("setup requires target: claude-code")
+	if len(args) < 1 || isHelpArg(args[0]) {
+		printSetupUsage()
+		return nil
 	}
-	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
+	fs := flag.NewFlagSet("setup claude-code", flag.ContinueOnError)
 	dryRun := fs.Bool("dry-run", false, "show changes without writing")
 	local := fs.Bool("local", false, "write .claude/settings.json in current directory")
 	configFile := fs.String("config", "", "explicit Claude Code settings.json path")
 	if err := fs.Parse(args[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 	switch args[0] {
@@ -229,6 +273,22 @@ func setupCommand(home string, args []string) error {
 	default:
 		return fmt.Errorf("unknown setup target %q", args[0])
 	}
+}
+
+func printSetupUsage() {
+	fmt.Fprintln(os.Stderr, `llm-memory setup <target> [flags]
+
+Targets:
+  claude-code    configure Claude Code MCP server
+
+Flags for claude-code:
+  --dry-run      show changes without writing
+  --local        write .claude/settings.json in current directory
+  --config PATH  explicit Claude Code settings.json path
+
+Examples:
+  llm-memory setup claude-code --dry-run
+  llm-memory setup claude-code --local`)
 }
 
 func setupClaudeCode(home string, dryRun, local bool, explicitPath string) error {
@@ -418,6 +478,19 @@ func canListen(addr string) bool {
 	}
 	_ = ln.Close()
 	return true
+}
+
+func isHelpArg(arg string) bool {
+	return arg == "help" || arg == "--help" || arg == "-help" || arg == "-h"
+}
+
+func hasHelpFlag(args []string) bool {
+	for _, arg := range args {
+		if isHelpArg(arg) {
+			return true
+		}
+	}
+	return false
 }
 
 func envDefault(k, fallback string) string {
