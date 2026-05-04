@@ -218,6 +218,19 @@ Acceptance:
 
 - Implementation can begin without architecture ambiguity.
 
+
+### RAG-004 — GUI Docling ingestion flow
+
+- Add GUI upload/select flow for Docling-supported documents.
+- Trigger ingestion and show progress/status/errors.
+- Store an ingestion run record with source path/URI, file hash, size, MIME/type, parser/Docling version, timestamps, status, and error details.
+- Link ingestion run → document → chunks → generated memory candidates/evidence citations.
+- Show document provenance and chunk lineage in the GUI.
+
+Acceptance:
+
+- User can ingest a document from the GUI and trace every resulting chunk/candidate back to the original source and ingestion run.
+
 ## P2 — Retrieval quality and token economy
 
 ### RET-001 — Ranking formula

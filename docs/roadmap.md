@@ -171,13 +171,15 @@ Goal: ingest documents as evidence and generate memory candidates from them.
 - document hashing and dedupe
 - chunking strategy with heading/page metadata
 - chunk FTS search
-- document/chunk GUI views
+- document/chunk GUI views with GUI upload/ingest flow for Docling-supported files
+- traceable ingestion runs with source file hash, source URI/path, parser version, timestamps, status/errors, document ID, and chunk IDs
 - memory candidate extraction from chunks
 - citation links from memory to evidence
 
 ### Should have
 
 - batch directory ingestion
+- GUI re-ingest controls showing changed/unchanged documents by hash
 - import status and errors table
 - re-ingest changed documents
 - Markdown/HTML export
@@ -185,7 +187,8 @@ Goal: ingest documents as evidence and generate memory candidates from them.
 
 ### Exit criteria
 
-- User can import a PDF/DOCX/HTML document and get searchable evidence plus candidate memories.
+- User can import a PDF/DOCX/HTML document from the GUI or CLI and get searchable evidence plus candidate memories.
+- Every imported document is traceable from source file → ingestion run → document record → chunks → candidate memories/citations.
 
 ## v0.6 — Retrieval quality
 
