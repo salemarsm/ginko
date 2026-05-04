@@ -60,6 +60,7 @@ func (s *Server) routes() {
 		s.mux.HandleFunc("GET "+prefix+"/memories", s.handleSearchGET)
 		s.mux.HandleFunc("POST "+prefix+"/memories", s.handleUpsertMemory)
 		s.mux.HandleFunc("GET "+prefix+"/memories/{id}", s.handleGetMemory)
+		s.mux.HandleFunc("GET "+prefix+"/memories/{id}/timeline", s.handleMemoryTimeline)
 		s.mux.HandleFunc("DELETE "+prefix+"/memories/{id}", s.handleForget)
 		s.mux.HandleFunc("POST "+prefix+"/search", s.handleSearchPOST)
 		s.mux.HandleFunc("GET "+prefix+"/usage", s.handleUsage)
@@ -271,7 +272,7 @@ func (s *Server) handleUpsertMemory(w http.ResponseWriter, r *http.Request) {
 		writeErrorStatus(w, http.StatusBadRequest, err)
 		return
 	}
-	s.appendEvent(r, memory.Event{Kind: "memory.upserted", Payload: created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
+	s.appendEvent(r, memory.Event{MemoryID: &created.ID, Kind: "memory.upserted", Payload: created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
 	writeJSON(w, http.StatusOK, created)
 }
 
@@ -284,13 +285,22 @@ func (s *Server) handleGetMemory(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, m)
 }
 
+func (s *Server) handleMemoryTimeline(w http.ResponseWriter, r *http.Request) {
+	out, err := s.store.MemoryTimeline(r.Context(), r.PathValue("id"), atoiDefault(r.URL.Query().Get("limit"), 100))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 func (s *Server) handleForget(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := s.store.Forget(r.Context(), id); err != nil {
 		writeError(w, err)
 		return
 	}
-	s.appendEvent(r, memory.Event{Kind: "memory.forgotten", Payload: id, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
+	s.appendEvent(r, memory.Event{MemoryID: &id, Kind: "memory.forgotten", Payload: id, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
 }
 
@@ -306,7 +316,8 @@ func (s *Server) handleSupersede(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	s.appendEvent(r, memory.Event{Kind: "memory.superseded", Payload: r.PathValue("id") + " -> " + created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
+	oldID := r.PathValue("id")
+	s.appendEvent(r, memory.Event{MemoryID: &oldID, Kind: "memory.superseded", Payload: oldID + " -> " + created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
 	writeJSON(w, http.StatusOK, created)
 }
 

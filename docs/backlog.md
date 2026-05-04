@@ -469,3 +469,10 @@ Acceptance:
 - [x] Strip `<private>...</private>` blocks before canonical memory persistence.
 - [x] Enforce at store layer and API/MCP ingress for memory writes/supersession.
 - [ ] Add GUI affordance to show when a write was redacted without revealing stripped content.
+
+## Memory timeline
+
+- [x] Add memory lifecycle timeline endpoint from append-only events.
+- [x] Add `memory_timeline` MCP tool.
+- [x] Add `memctl timeline <id>` CLI helper.
+- [ ] Add GUI memory detail timeline panel.

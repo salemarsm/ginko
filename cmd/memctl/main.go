@@ -94,6 +94,14 @@ func main() {
 		var out memory.Memory
 		post(*addr+"/api/memories", *token, m, &out)
 		printJSONOrText(*jsonOut, out, func() { fmt.Println(out.ID) })
+	case "timeline":
+		if flag.NArg() < 2 {
+			log.Fatal("timeline requires id")
+		}
+		id := flag.Arg(1)
+		var out any
+		get(strings.TrimRight(*addr, "/")+"/api/memories/"+id+"/timeline", *token, &out)
+		printJSONOrText(*jsonOut, out, func() { printJSON(out) })
 	case "forget":
 		if flag.NArg() < 2 {
 			log.Fatal("forget requires id")
@@ -114,6 +122,26 @@ func main() {
 	default:
 		usage()
 		os.Exit(2)
+	}
+}
+
+func get(url string, token string, out any) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	setBearer(req, token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		log.Fatalf("%s: %s", resp.Status, body)
+	}
+	if err := json.Unmarshal(body, out); err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -143,6 +171,11 @@ func setBearer(req *http.Request, token string) {
 	if strings.TrimSpace(token) != "" {
 		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
 	}
+}
+
+func printJSON(v any) {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	fmt.Println(string(b))
 }
 
 func printJSONOrText(jsonOut bool, v any, text func()) {
@@ -192,6 +225,7 @@ Commands:
   ingest <path>        ingest a file or directory recursively into RAG documents/chunks
   chunks <query>       search RAG chunks/evidence
   suggest <text>       suggest durable memories/learnings from text
+  timeline <id>        show memory lifecycle/audit timeline
   forget <id>          delete a memory
 
 Flags:

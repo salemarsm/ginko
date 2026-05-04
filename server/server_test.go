@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -207,5 +208,35 @@ func TestAPIUpsertStripsPrivateTags(t *testing.T) {
 	}
 	if strings.Contains(rec.Body.String(), "secret") || !strings.Contains(rec.Body.String(), "visible fact") {
 		t.Fatalf("private content leaked or public content missing: %s", rec.Body.String())
+	}
+}
+
+func TestMemoryTimelineAPI(t *testing.T) {
+	store, err := memory.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	h := New(store, config.Default()).Handler()
+
+	body := `{"type":"decision","subject":"timeline","content":"Use explicit supersession.","source":{"kind":"test","ref":"timeline"},"scope":"project","confidence":0.9}`
+	req := httptest.NewRequest(http.MethodPost, "/api/memories", bytes.NewBufferString(body))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("POST /api/memories status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var created memory.Memory
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/api/memories/"+created.ID+"/timeline", nil)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("timeline status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "memory.upserted") {
+		t.Fatalf("missing timeline event: %s", rec.Body.String())
 	}
 }

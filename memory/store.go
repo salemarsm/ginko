@@ -408,20 +408,10 @@ func (s *Store) ListEvents(ctx context.Context, limit int) ([]Event, error) {
 
 	var out []Event
 	for rows.Next() {
-		var e Event
-		var created string
-		var memoryID sql.NullString
-		if err := rows.Scan(&e.ID, &memoryID, &e.Kind, &e.Payload, &e.Source.Kind, &e.Source.Ref, &created); err != nil {
-			return nil, err
-		}
-		if memoryID.Valid {
-			e.MemoryID = &memoryID.String
-		}
-		t, err := parseTime(created)
+		e, err := scanEvent(rows)
 		if err != nil {
 			return nil, err
 		}
-		e.CreatedAt = t
 		out = append(out, e)
 	}
 	return out, rows.Err()

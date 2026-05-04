@@ -145,6 +145,22 @@ func (s *mcpServer) callTool(call toolCall) (string, error) {
 			m.EmbeddingRefs = memory.EmbeddingRefs{}
 		}
 		out, err := s.store.UpsertMemory(ctx, m)
+		if err == nil {
+			_ = s.store.AppendEvent(ctx, memory.Event{MemoryID: &out.ID, Kind: "memory.upserted", Payload: out.ID, Source: memory.Source{Kind: "mcp", Ref: "memory_remember"}})
+		}
+		return pretty(out), err
+	case "memory_timeline":
+		var req struct {
+			ID    string `json:"id"`
+			Limit int    `json:"limit"`
+		}
+		if err := json.Unmarshal(call.Arguments, &req); err != nil {
+			return "", err
+		}
+		if req.ID == "" {
+			return "", fmt.Errorf("id is required")
+		}
+		out, err := s.store.MemoryTimeline(ctx, req.ID, req.Limit)
 		return pretty(out), err
 	case "memory_search":
 		var q memory.Query
@@ -243,6 +259,11 @@ func tools() []map[string]any {
 			"name":        "memory_session_summary",
 			"description": "Return the active or latest closed session summary for a project, or a specific session by id.",
 			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{"project": map[string]string{"type": "string"}, "session_id": map[string]string{"type": "string"}}},
+		},
+		{
+			"name":        "memory_timeline",
+			"description": "Show lifecycle/audit events for one memory, including creation, supersession, deletion, and context usage when recorded.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{"id": map[string]string{"type": "string"}, "limit": map[string]string{"type": "integer"}}, "required": []string{"id"}},
 		},
 	}
 }
