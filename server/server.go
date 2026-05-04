@@ -36,6 +36,7 @@ func (s *Server) routes() {
 		s.mux.HandleFunc("GET "+prefix+"/memories/{id}", s.handleGetMemory)
 		s.mux.HandleFunc("DELETE "+prefix+"/memories/{id}", s.handleForget)
 		s.mux.HandleFunc("POST "+prefix+"/search", s.handleSearchPOST)
+		s.mux.HandleFunc("GET "+prefix+"/usage", s.handleUsage)
 		s.mux.HandleFunc("POST "+prefix+"/context", s.handleContext)
 		s.mux.HandleFunc("POST "+prefix+"/feedback", s.handleFeedback)
 		s.mux.HandleFunc("POST "+prefix+"/suggest", s.handleSuggest)
@@ -75,6 +76,26 @@ func (s *Server) handleSearchGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
+	q := memory.Query{
+		Text:    r.URL.Query().Get("q"),
+		Subject: r.URL.Query().Get("subject"),
+		Limit:   atoiDefault(r.URL.Query().Get("limit"), 200),
+	}
+	if typ := r.URL.Query().Get("type"); typ != "" {
+		q.Types = []memory.MemoryType{memory.MemoryType(typ)}
+	}
+	if scope := r.URL.Query().Get("scope"); scope != "" {
+		q.Scopes = []memory.Scope{memory.Scope(scope)}
+	}
+	rows, err := s.store.ListMemoryUsage(r.Context(), q, atoiDefault(r.URL.Query().Get("event_limit"), 1000))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rows)
 }
 
 func (s *Server) handleSearchPOST(w http.ResponseWriter, r *http.Request) {

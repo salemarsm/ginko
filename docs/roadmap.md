@@ -142,6 +142,7 @@ Goal: improve trust, auditability, and correctness of stored memory.
 - memory approval queue in GUI
 - soft delete vs hard delete semantics
 - audit UI for memory creation/supersession/deletion
+- table-first memory health UI with usage counters; no graph/Neo4j dependency
 
 ### Should have
 
@@ -150,6 +151,7 @@ Goal: improve trust, auditability, and correctness of stored memory.
 - memory quality scoring
 - duplicate/near-duplicate detection
 - explanation traces for rejected suggestions
+- analytics views: heatmap, supersession timeline, and context/memory Sankey-style flow
 
 ### Exit criteria
 

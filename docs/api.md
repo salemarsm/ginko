@@ -11,6 +11,7 @@ Core endpoints:
 - `POST /api/suggest`
 - `POST /api/memories`
 - `POST /api/search`
+- `GET /api/usage`
 - `POST /api/supersede/{id}`
 - `DELETE /api/memories/{id}`
 - `GET /api/events`
@@ -19,5 +20,7 @@ Core endpoints:
 
 
 `POST /api/context` returns a `context_id`. Agents can later call `POST /api/feedback` with `{ "context_id": "...", "useful": true|false, "memory_ids_used": [...] }` to create retrieval-quality signals. Feedback is stored as `context.feedback` events for future evaluation/tuning.
+
+`GET /api/usage` returns memories plus usage counters derived from `context.built` and `context.feedback` events. The embedded GUI uses this for the dense table view and zombie/hot memory indicators.
 
 Memory suggestion details: [Suggestion engine](suggestion-engine.md).

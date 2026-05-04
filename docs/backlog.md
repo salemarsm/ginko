@@ -29,6 +29,7 @@ These came from early code review feedback and are already implemented after `v0
 - Makefile for build/test/check/install/snapshot.
 - Retrieval baseline tests for BM25 ranking, technical short-token queries, FTS-miss fallback, empty-context event suppression, and feedback events.
 - `POST /api/feedback` plus `context_id` in context responses.
+- Dense memory table GUI with filters and usage counters; no graph/Neo4j dependency.
 
 
 ## P0 — Safety, correctness, and release hygiene
@@ -159,6 +160,21 @@ Acceptance:
 Acceptance:
 
 - Codex-like shell can use memory even without MCP.
+
+### UX-000 — Memory health UI
+
+Direction: table-first, analytics-second, graph-last. Avoid Neo4j or a general graph view because canonical memory should remain inspectable in SQLite and graph modeling is a poor fit for most memory types.
+
+- Dense table view exists with filters and usage counters.
+- Add persistent filters and richer inline edits.
+- Add memory detail timeline from events/context usage.
+- Add bulk actions for scope/subject/forget.
+- Later: heatmap, supersession timeline, Sankey/context usage analytics.
+- Only consider a graph view for `relationship` memories if real users ask for it.
+
+Acceptance:
+
+- User can judge memory health: zombie memories, hot memories, low-confidence memories, and stale tasks without leaving the embedded GUI.
 
 ### UX-001 — Memory approval queue
 
