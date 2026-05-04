@@ -125,3 +125,34 @@ func TestBearerAuthProtectsAPI(t *testing.T) {
 		t.Fatalf("GET /healthz should remain public status=%d body=%s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestSearchIncludeRanking(t *testing.T) {
+	store, err := memory.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	h := New(store, config.Default()).Handler()
+
+	body := `{"type":"decision","subject":"rank","content":"Endpoint /api/search can expose lexical score.","source":{"kind":"test","ref":"rank"},"scope":"project","confidence":0.9}`
+	req := httptest.NewRequest(http.MethodPost, "/api/memories", bytes.NewBufferString(body))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("POST /api/memories status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/api/search", bytes.NewBufferString(`{"text":"/api/search","subject":"rank","include_ranking":true}`))
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "lexical_score") || !strings.Contains(rec.Body.String(), "rank_reason") {
+		t.Fatalf("POST /api/search include_ranking status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/memories?q=/api/search&subject=rank&include_ranking=true", nil)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "lexical_score") {
+		t.Fatalf("GET /api/memories include_ranking status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}

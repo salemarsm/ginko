@@ -101,6 +101,15 @@ func (s *Server) handleSearchGET(w http.ResponseWriter, r *http.Request) {
 	if scope := r.URL.Query().Get("scope"); scope != "" {
 		q.Scopes = []memory.Scope{memory.Scope(scope)}
 	}
+	if truthy(r.URL.Query().Get("include_ranking")) {
+		items, err := s.store.SearchRanked(r.Context(), q)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, items)
+		return
+	}
 	items, err := s.store.Search(r.Context(), q)
 	if err != nil {
 		writeError(w, err)
@@ -133,6 +142,15 @@ func (s *Server) handleSearchPOST(w http.ResponseWriter, r *http.Request) {
 	var q memory.Query
 	if err := json.NewDecoder(r.Body).Decode(&q); err != nil {
 		writeErrorStatus(w, http.StatusBadRequest, err)
+		return
+	}
+	if q.IncludeRanking {
+		items, err := s.store.SearchRanked(r.Context(), q)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, items)
 		return
 	}
 	items, err := s.store.Search(r.Context(), q)
@@ -328,6 +346,11 @@ func writeError(w http.ResponseWriter, err error) {
 
 func writeErrorStatus(w http.ResponseWriter, status int, err error) {
 	writeJSON(w, status, map[string]string{"error": err.Error()})
+}
+
+func truthy(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return s == "1" || s == "true" || s == "yes" || s == "on"
 }
 
 func atoiDefault(s string, fallback int) int {

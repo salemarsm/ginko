@@ -265,6 +265,18 @@ func (s *Store) GetMemory(ctx context.Context, id string) (Memory, error) {
 }
 
 func (s *Store) Search(ctx context.Context, q Query) ([]Memory, error) {
+	rows, err := s.SearchRanked(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Memory, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, r.Memory)
+	}
+	return out, nil
+}
+
+func (s *Store) SearchRanked(ctx context.Context, q Query) ([]RankedMemory, error) {
 	limit := q.Limit
 	if limit <= 0 || limit > 100 {
 		limit = 20
@@ -273,6 +285,7 @@ func (s *Store) Search(ctx context.Context, q Query) ([]Memory, error) {
 	args := []any{}
 	join := ""
 	orderBy := "m.updated_at DESC"
+	lexicalExpr := "NULL"
 	if strings.TrimSpace(q.Text) != "" {
 		fts := ftsQuery(q.Text)
 		if fts != "" {
@@ -280,6 +293,7 @@ func (s *Store) Search(ctx context.Context, q Query) ([]Memory, error) {
 			where = append(where, "memories_fts MATCH ?")
 			args = append(args, fts)
 			orderBy = "bm25(memories_fts) ASC, m.confidence DESC, m.updated_at DESC"
+			lexicalExpr = "bm25(memories_fts)"
 		}
 	}
 	if q.Subject != "" {
@@ -304,19 +318,19 @@ func (s *Store) Search(ctx context.Context, q Query) ([]Memory, error) {
 	}
 	args = append(args, limit)
 
-	sqlq := fmt.Sprintf(`SELECT m.id, m.type, m.subject, m.content, m.source_kind, m.source_ref, m.scope, m.confidence, m.created_at, m.updated_at, m.valid_from, m.valid_until, m.supersedes_id, m.superseded_by, m.tags_json, m.embedding_refs_json FROM memories m %s WHERE %s ORDER BY %s LIMIT ?`, join, strings.Join(where, " AND "), orderBy)
+	sqlq := fmt.Sprintf(`SELECT m.id, m.type, m.subject, m.content, m.source_kind, m.source_ref, m.scope, m.confidence, m.created_at, m.updated_at, m.valid_from, m.valid_until, m.supersedes_id, m.superseded_by, m.tags_json, m.embedding_refs_json, %s AS lexical_score FROM memories m %s WHERE %s ORDER BY %s LIMIT ?`, lexicalExpr, join, strings.Join(where, " AND "), orderBy)
 	rows, err := s.db.QueryContext(ctx, sqlq, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []Memory
+	var out []RankedMemory
 	for rows.Next() {
-		m, err := scanMemory(rows)
+		m, lexical, err := scanMemoryWithLexicalScore(rows)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, m)
+		out = append(out, RankedMemory{Memory: m, Ranking: rankMemory(m, lexical)})
 	}
 	return out, rows.Err()
 }
@@ -481,4 +495,128 @@ func nullableString(s *string) any {
 		return nil
 	}
 	return *s
+}
+
+func scanMemoryWithLexicalScore(rows scanner) (Memory, *float64, error) {
+	var m Memory
+	var created, updated string
+	var validFrom, validUntil, supersedes, supersededBy sql.NullString
+	var tagsJSON, embedsJSON string
+	var lexical sql.NullFloat64
+	if err := rows.Scan(&m.ID, &m.Type, &m.Subject, &m.Content, &m.Source.Kind, &m.Source.Ref, &m.Scope, &m.Confidence, &created, &updated, &validFrom, &validUntil, &supersedes, &supersededBy, &tagsJSON, &embedsJSON, &lexical); err != nil {
+		return Memory{}, nil, err
+	}
+	var err error
+	m.CreatedAt, err = parseTime(created)
+	if err != nil {
+		return Memory{}, nil, err
+	}
+	m.UpdatedAt, err = parseTime(updated)
+	if err != nil {
+		return Memory{}, nil, err
+	}
+	if validFrom.Valid {
+		t, err := parseTime(validFrom.String)
+		if err != nil {
+			return Memory{}, nil, err
+		}
+		m.ValidFrom = &t
+	}
+	if validUntil.Valid {
+		t, err := parseTime(validUntil.String)
+		if err != nil {
+			return Memory{}, nil, err
+		}
+		m.ValidUntil = &t
+	}
+	if supersedes.Valid {
+		m.SupersedesID = &supersedes.String
+	}
+	if supersededBy.Valid {
+		m.SupersededBy = &supersededBy.String
+	}
+	if err := json.Unmarshal([]byte(tagsJSON), &m.Tags); err != nil {
+		return Memory{}, nil, err
+	}
+	if err := json.Unmarshal([]byte(embedsJSON), &m.EmbeddingRefs); err != nil {
+		return Memory{}, nil, err
+	}
+	if lexical.Valid {
+		v := lexical.Float64
+		return m, &v, nil
+	}
+	return m, nil, nil
+}
+
+func rankMemory(m Memory, lexical *float64) RankingMetadata {
+	confidence := m.Confidence
+	if confidence < 0 {
+		confidence = 0
+	}
+	if confidence > 1 {
+		confidence = 1
+	}
+	recency := recencyScore(m.UpdatedAt)
+	provenance := provenanceScore(m.Source)
+	lexicalComponent := 0.0
+	reason := []string{}
+	if lexical != nil {
+		lexicalComponent = lexicalScore(*lexical)
+		reason = append(reason, "lexical FTS5/BM25 match")
+	}
+	if confidence >= 0.8 {
+		reason = append(reason, "high confidence")
+	}
+	if provenance >= 0.8 {
+		reason = append(reason, "strong provenance")
+	}
+	if recency >= 0.75 {
+		reason = append(reason, "recent")
+	}
+	final := 0.45*lexicalComponent + 0.30*confidence + 0.15*provenance + 0.10*recency
+	if lexical == nil {
+		final = 0.45*confidence + 0.35*provenance + 0.20*recency
+	}
+	return RankingMetadata{LexicalScore: lexical, RecencyScore: recency, ConfidenceScore: confidence, ProvenanceScore: provenance, FinalScore: final, RankReason: strings.Join(reason, " + ")}
+}
+
+func lexicalScore(bm25 float64) float64 {
+	if bm25 < 0 {
+		bm25 = -bm25
+	}
+	return 1 / (1 + bm25)
+}
+
+func recencyScore(t time.Time) float64 {
+	if t.IsZero() {
+		return 0
+	}
+	days := time.Since(t).Hours() / 24
+	switch {
+	case days <= 7:
+		return 1
+	case days >= 365:
+		return 0.1
+	default:
+		return 1 - (days-7)*(0.9/(365-7))
+	}
+}
+
+func provenanceScore(src Source) float64 {
+	switch strings.TrimSpace(src.Kind) {
+	case "conversation", "api", "gui", "memctl", "chunk", "file:docling":
+		if strings.TrimSpace(src.Ref) != "" {
+			return 0.9
+		}
+		return 0.7
+	case "suggestion":
+		return 0.6
+	case "":
+		return 0.2
+	default:
+		if strings.TrimSpace(src.Ref) != "" {
+			return 0.75
+		}
+		return 0.5
+	}
 }

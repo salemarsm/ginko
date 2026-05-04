@@ -67,10 +67,27 @@ type Event struct {
 // Query is intentionally simple. More advanced systems can plug in BM25,
 // vector search, graph traversal, or policy filters behind this API.
 type Query struct {
-	Text    string       `json:"text"`
-	Types   []MemoryType `json:"types"`
-	Scopes  []Scope      `json:"scopes"`
-	Subject string       `json:"subject"`
-	Tags    []string     `json:"tags"`
-	Limit   int          `json:"limit"`
+	Text           string       `json:"text"`
+	Types          []MemoryType `json:"types"`
+	Scopes         []Scope      `json:"scopes"`
+	Subject        string       `json:"subject"`
+	Tags           []string     `json:"tags"`
+	Limit          int          `json:"limit"`
+	IncludeRanking bool         `json:"include_ranking,omitempty"`
+}
+
+// RankingMetadata is derived retrieval state, not canonical memory.
+type RankingMetadata struct {
+	LexicalScore    *float64 `json:"lexical_score,omitempty"`
+	SemanticScore   *float64 `json:"semantic_score,omitempty"`
+	RecencyScore    float64  `json:"recency_score"`
+	ConfidenceScore float64  `json:"confidence_score"`
+	ProvenanceScore float64  `json:"provenance_score"`
+	FinalScore      float64  `json:"final_score"`
+	RankReason      string   `json:"rank_reason"`
+}
+
+type RankedMemory struct {
+	Memory  Memory          `json:"memory"`
+	Ranking RankingMetadata `json:"ranking"`
 }

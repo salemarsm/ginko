@@ -236,18 +236,18 @@ Acceptance:
 
 ### RET-001 — Ranking metadata shape
 
-- Define backwards-compatible ranking metadata for `/api/search` and `/api/context`.
+- Define backwards-compatible ranking metadata for `/api/search` and `/api/context`. [started: `/api/search`]
 - Include optional fields: `lexical_score`, `semantic_score`, `recency_score`, `confidence_score`, `provenance_score`, `final_score`, and `rank_reason`.
 - Prefer opt-in metadata via `include_ranking` or an additive `ranking` object.
 
 Acceptance:
 
-- Existing clients continue working without ranking metadata.
-- New clients can explain why a memory was retrieved.
+- Existing clients continue working without ranking metadata. [implemented for `/api/search`]
+- New clients can explain why a memory was retrieved. [started with lexical/confidence/provenance/recency metadata]
 
 ### RET-007 — Lexical score exposure
 
-- Expose FTS5/BM25-style lexical score where possible.
+- Expose FTS5/BM25-style lexical score where possible. [implemented for memory search]
 - Preserve exact matching behavior for technical terms, IDs, commands, errors, filenames, endpoints, code symbols, and acronyms.
 
 Acceptance:

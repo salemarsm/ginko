@@ -207,11 +207,11 @@ Retrieval must remain layered:
 
 - lexical retrieval with SQLite FTS5 as the default candidate generator [started post-alpha]
 - prioritize exact technical terms: IDs, commands, errors, filenames, endpoints, code symbols, and acronyms [started post-alpha]
-- expose lexical/BM25-style score where possible as `lexical_score`
+- expose lexical/BM25-style score where possible as `lexical_score` [started for `/api/search`]
 - optional semantic retrieval with embeddings via local or remote adapters; no embedding provider is required
 - preserve `embedding_refs_json` as a bridge while keeping vector stores outside canonical truth
 - hybrid ranker combining lexical score, semantic score, confidence, recency, scope, memory type, provenance quality, and lifecycle/status
-- explainable ranking metadata: `semantic_score`, `recency_score`, `confidence_score`, `provenance_score`, `final_score`, and `rank_reason`
+- explainable ranking metadata: `semantic_score`, `recency_score`, `confidence_score`, `provenance_score`, `final_score`, and `rank_reason` [started for lexical search]
 - penalize or exclude `superseded`, `deleted`, `inactive`, and expired memories from current-truth retrieval
 - contradiction-aware retrieval that surfaces possible conflicts between active memories instead of hiding ambiguity
 - integrate hybrid ranking into `POST /api/context`, `POST /api/v1/context`, and MCP `memory_context`
