@@ -91,6 +91,15 @@ Planned / not production-ready yet:
 - production multi-user isolation
 - stable v1 API guarantees
 
+## Technical deep dive
+
+For readers who want the full model and rationale, see the white paper:
+
+- [llm-memory white paper PDF](docs/whitepaper/llm-memory-whitepaper.pdf)
+- [LaTeX source](docs/whitepaper/llm-memory-whitepaper.tex)
+
+It covers the canonical-memory model, SQLite schema philosophy, retrieval/context pipeline, RAG boundaries, governance/auditability, and why embeddings remain optional indexes instead of the source of truth.
+
 ## The problem
 
 Most agent memory systems confuse three different things:
@@ -487,6 +496,8 @@ Keep project-specific knowledge compartmentalized per tool, target, client, or e
 - [Memory model](docs/memory-model.md)
 - [HTTP API](docs/api.md)
 - [OpenAPI](docs/openapi.yaml)
+- [White paper](docs/whitepaper/llm-memory-whitepaper.pdf)
+- [White paper source](docs/whitepaper/llm-memory-whitepaper.tex)
 - [CLI](docs/cli.md)
 - [MCP](docs/mcp.md)
 - [Suggestion engine](docs/suggestion-engine.md)
@@ -518,6 +529,15 @@ Ele resolve um problema comum: agentes confundem histórico de chat, busca vetor
 - **SQLite** é a fonte canônica da verdade.
 
 > **Busca vetorial não é memória. Histórico de chat não é memória. A LLM não é o banco de dados.**
+
+## Aprofundamento técnico
+
+Para leitores que quiserem a fundamentação completa, leia o white paper:
+
+- [PDF do white paper](docs/whitepaper/llm-memory-whitepaper.pdf)
+- [Fonte LaTeX](docs/whitepaper/llm-memory-whitepaper.tex)
+
+Ele detalha o modelo de memória canônica, a filosofia do schema SQLite, o pipeline de retrieval/contexto, os limites entre RAG e memória, governança/auditoria e por que embeddings são índices opcionais, não a fonte da verdade.
 
 ## O problema
 
