@@ -117,3 +117,20 @@ Use the staging DB. Never commit credentials.
 ```
 
 If stripping private blocks leaves empty content, the memory write is rejected by normal validation. Private blocks are not a substitute for secret storage; they are a redaction primitive for agents before canonical memory is saved.
+
+## Memory timeline
+
+`GET /api/memories/{id}/timeline` returns lifecycle/audit context for one memory:
+
+- the current memory record, when it still exists
+- direct events linked through `events.memory_id`
+- related events whose payload references the memory id, including context usage events
+
+MCP exposes the same view as `memory_timeline` with `{ "id": "mem_...", "limit": 100 }`.
+CLI:
+
+```bash
+memctl timeline mem_...
+```
+
+Use this for “how did we get to this decision?” and before superseding an existing memory.

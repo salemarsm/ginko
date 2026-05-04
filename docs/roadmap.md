@@ -296,3 +296,7 @@ Goal: stable API and schema guarantees for local agent memory.
 
 - `<private>...</private>` blocks are stripped before memory persistence at store and API/MCP ingress.
 - Fully private memories are rejected after redaction by existing content validation.
+
+### v0.3 timeline — started
+
+- Added `GET /api/memories/{id}/timeline`, `memory_timeline`, and `memctl timeline <id>` for lifecycle/audit drill-down.
