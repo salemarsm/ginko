@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -145,7 +146,7 @@ func (s *Server) handleUpsertMemory(w http.ResponseWriter, r *http.Request) {
 		writeErrorStatus(w, http.StatusBadRequest, err)
 		return
 	}
-	_ = s.store.AppendEvent(r.Context(), memory.Event{Kind: "memory.upserted", Payload: created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
+	s.appendEvent(r, memory.Event{Kind: "memory.upserted", Payload: created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
 	writeJSON(w, http.StatusOK, created)
 }
 
@@ -164,7 +165,7 @@ func (s *Server) handleForget(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	_ = s.store.AppendEvent(r.Context(), memory.Event{Kind: "memory.forgotten", Payload: id, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
+	s.appendEvent(r, memory.Event{Kind: "memory.forgotten", Payload: id, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted", "id": id})
 }
 
@@ -179,7 +180,7 @@ func (s *Server) handleSupersede(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	_ = s.store.AppendEvent(r.Context(), memory.Event{Kind: "memory.superseded", Payload: r.PathValue("id") + " -> " + created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
+	s.appendEvent(r, memory.Event{Kind: "memory.superseded", Payload: r.PathValue("id") + " -> " + created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
 	writeJSON(w, http.StatusOK, created)
 }
 
@@ -190,6 +191,12 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) appendEvent(r *http.Request, e memory.Event) {
+	if err := s.store.AppendEvent(r.Context(), e); err != nil {
+		log.Printf("llm-memory: append %s event failed: %v", e.Kind, err)
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

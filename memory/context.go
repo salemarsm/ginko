@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -87,16 +88,20 @@ func (s *Store) BuildContext(ctx context.Context, req ContextRequest) (ContextRe
 	}
 
 	contextID := newID("ctx")
-	payload, _ := json.Marshal(map[string]any{
-		"context_id":       contextID,
-		"query":            req.Query,
-		"subject":          req.Subject,
-		"memory_ids":       memoryIDs(selected),
-		"estimated_tokens": used,
-		"budget_tokens":    budget,
-		"truncated":        truncated,
-	})
-	_ = s.AppendEvent(ctx, Event{Kind: "context.built", Payload: string(payload), Source: Source{Kind: "retrieval", Ref: "BuildContext"}, CreatedAt: time.Now().UTC()})
+	if len(selected) > 0 {
+		payload, _ := json.Marshal(map[string]any{
+			"context_id":       contextID,
+			"query":            req.Query,
+			"subject":          req.Subject,
+			"memory_ids":       memoryIDs(selected),
+			"estimated_tokens": used,
+			"budget_tokens":    budget,
+			"truncated":        truncated,
+		})
+		if err := s.AppendEvent(ctx, Event{Kind: "context.built", Payload: string(payload), Source: Source{Kind: "retrieval", Ref: "BuildContext"}, CreatedAt: time.Now().UTC()}); err != nil {
+			log.Printf("llm-memory: append context.built event failed: %v", err)
+		}
+	}
 
 	return ContextResponse{
 		ContextID:       contextID,

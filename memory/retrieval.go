@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var ftsTokenRE = regexp.MustCompile(`[\pL\pN_]+`)
@@ -21,8 +22,9 @@ var ftsStopwords = map[string]struct{}{
 func ftsQuery(text string) string {
 	seen := map[string]struct{}{}
 	terms := []string{}
-	for _, raw := range ftsTokenRE.FindAllString(strings.ToLower(text), -1) {
-		if len([]rune(raw)) < 3 {
+	for _, token := range ftsTokenRE.FindAllString(text, -1) {
+		raw := strings.ToLower(token)
+		if len([]rune(raw)) < 3 && !isLikelyTechnicalShortToken(token) {
 			continue
 		}
 		if _, ok := ftsStopwords[raw]; ok {
@@ -38,6 +40,25 @@ func ftsQuery(text string) string {
 		}
 	}
 	return strings.Join(terms, " OR ")
+}
+
+func isLikelyTechnicalShortToken(token string) bool {
+	hasDigit := false
+	hasLetter := false
+	hasUpper := false
+	for _, r := range token {
+		if unicode.IsDigit(r) {
+			hasDigit = true
+			continue
+		}
+		if unicode.IsLetter(r) {
+			hasLetter = true
+			if unicode.IsUpper(r) {
+				hasUpper = true
+			}
+		}
+	}
+	return hasDigit || (hasLetter && hasUpper)
 }
 
 type ContextFeedback struct {

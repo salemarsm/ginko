@@ -6,6 +6,18 @@ import (
 	"testing"
 )
 
+func TestFTSQuery_KeepsTechnicalShortTokens(t *testing.T) {
+	q := ftsQuery("AI ML Go v8 k8s UI and to")
+	for _, want := range []string{"ai*", "ml*", "go*", "v8*", "k8s*", "ui*"} {
+		if !strings.Contains(q, want) {
+			t.Fatalf("expected %q in FTS query %q", want, q)
+		}
+	}
+	if strings.Contains(q, "and*") || strings.Contains(q, "to*") {
+		t.Fatalf("stopwords leaked into FTS query %q", q)
+	}
+}
+
 func TestRetrieval_BM25PreferenceWinsOverRecentWeakMatch(t *testing.T) {
 	ctx := context.Background()
 	s, err := Open(":memory:")
@@ -64,6 +76,30 @@ func TestBuildContext_FallsBackToSubjectMemoriesWhenFTSMisses(t *testing.T) {
 	}
 	if strings.Contains(resp.Context, "Low confidence") {
 		t.Fatalf("low-confidence memory leaked into context: %q", resp.Context)
+	}
+}
+
+func TestBuildContext_DoesNotRecordBuiltEventWhenEmpty(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	resp, err := s.BuildContext(ctx, ContextRequest{Query: "nothing", Subject: "missing", MaxTokens: 300})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.ContextID == "" {
+		t.Fatal("expected context_id even for empty context")
+	}
+	events, err := s.ListEvents(ctx, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("expected no context.built event for empty context, got %#v", events)
 	}
 }
 

@@ -27,7 +27,7 @@ These came from early code review feedback and are already implemented after `v0
 - GoReleaser release scaffolding.
 - Version metadata command/flags with ldflags support.
 - Makefile for build/test/check/install/snapshot.
-- Retrieval baseline tests for BM25 ranking, FTS-miss fallback, and feedback events.
+- Retrieval baseline tests for BM25 ranking, technical short-token queries, FTS-miss fallback, empty-context event suppression, and feedback events.
 - `POST /api/feedback` plus `context_id` in context responses.
 
 
@@ -209,6 +209,7 @@ Acceptance:
 
 - BM25-backed FTS ranking exists as first retrieval upgrade.
 - Combine FTS rank, scope priority, confidence, recency, and type weights.
+- Consider hybrid score after the baseline is measurable, e.g. BM25 adjusted by confidence and type-aware recency decay.
 - Add RRF-style fusion once multiple candidate generators exist.
 - Document formula.
 
@@ -236,6 +237,16 @@ Acceptance:
 Acceptance:
 
 - Context does not get dominated by one memory category.
+
+### RET-006 — Context event linkage
+
+- Add first-class `context_id` column/index or dedicated `contexts` table.
+- Validate `POST /api/feedback` references an existing built context.
+- Avoid payload LIKE scans for context lookup.
+
+Acceptance:
+
+- Feedback for invented context IDs is rejected or explicitly marked orphaned without expensive event payload scans.
 
 ### RET-003 — Context cache
 
