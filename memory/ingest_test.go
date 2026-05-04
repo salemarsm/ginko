@@ -41,6 +41,16 @@ func TestIngestPathRecursive(t *testing.T) {
 	if len(docs) != 2 {
 		t.Fatalf("expected 2 docs, got %d", len(docs))
 	}
+	if docs[0].IngestionRunID != resp.Run.ID && docs[1].IngestionRunID != resp.Run.ID {
+		t.Fatalf("expected documents to link to ingestion run %s: %#v", resp.Run.ID, docs)
+	}
+	runs, err := s.ListIngestionRuns(ctx, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(runs) != 1 || runs[0].ID != resp.Run.ID {
+		t.Fatalf("expected run listing to include %s: %#v", resp.Run.ID, runs)
+	}
 }
 
 func TestIngestDoclingFileWithCLI(t *testing.T) {
@@ -88,6 +98,9 @@ printf '# Converted\n\nDocling extracted PDF content from %s.\n' "$last" > "$out
 	}
 	if resp.Documents[0].SourceKind != "file:docling" {
 		t.Fatalf("expected file:docling source kind, got %s", resp.Documents[0].SourceKind)
+	}
+	if resp.Documents[0].IngestionRunID != resp.Run.ID {
+		t.Fatalf("expected docling document to link to run %s, got %s", resp.Run.ID, resp.Documents[0].IngestionRunID)
 	}
 }
 

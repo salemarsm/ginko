@@ -25,6 +25,7 @@ Core endpoints:
 - `GET /api/config`
 - `POST /api/ingest`
 - `GET /api/documents`
+- `GET /api/ingestion-runs`
 - `POST /api/chunks/search`
 - `GET /healthz`
 
@@ -38,3 +39,5 @@ Memory suggestion details: [Suggestion engine](suggestion-engine.md).
 `POST /api/ingest` accepts `{ "path": "...", "recursive": true }` and ingests supported text-like files into the document/chunk RAG tables. Directories can be processed recursively. Each run emits a `document.ingested` event with source path, run id, document count, chunk count, and skipped files. PDF/DOCX/PPTX/XLSX/image ingestion uses the `docling` CLI when available in `PATH`; if Docling is missing, those files are skipped with a clear provenance/error entry in the run response.
 
 `POST /api/chunks/search` accepts `{ "text": "...", "document_id": "optional", "limit": 20 }` and returns chunk results with document provenance and BM25 score. Use this as the evidence search surface; canonical memories remain separate.
+
+`GET /api/ingestion-runs` returns recent ingestion runs with parser/version, source path, recursive flag, status, counts, timestamps, and error details. Documents include `ingestion_run_id`, so evidence can be traced from run → document → chunks.

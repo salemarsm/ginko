@@ -3,13 +3,14 @@ package memory
 import "time"
 
 type Document struct {
-	ID         string    `json:"id"`
-	Path       string    `json:"path"`
-	Title      string    `json:"title"`
-	SourceKind string    `json:"source_kind"`
-	SourceRef  string    `json:"source_ref"`
-	SHA256     string    `json:"sha256"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID             string    `json:"id"`
+	IngestionRunID string    `json:"ingestion_run_id,omitempty"`
+	Path           string    `json:"path"`
+	Title          string    `json:"title"`
+	SourceKind     string    `json:"source_kind"`
+	SourceRef      string    `json:"source_ref"`
+	SHA256         string    `json:"sha256"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type Chunk struct {

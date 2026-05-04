@@ -240,6 +240,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IngestResponse'
+  /api/ingestion-runs:
+    get:
+      summary: List RAG ingestion runs
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+      responses:
+        '200':
+          description: Ingestion runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IngestionRun'
   /api/documents:
     get:
       summary: List ingested RAG documents
@@ -324,6 +340,7 @@ components:
       type: object
       properties:
         id: { type: string }
+        ingestion_run_id: { type: string }
         path: { type: string }
         title: { type: string }
         source_kind: { type: string }

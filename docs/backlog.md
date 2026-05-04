@@ -225,8 +225,8 @@ Acceptance:
 - Support recursive folder ingestion for RAG sources. [started: CLI/API/GUI path flow with native + Docling CLI parsers]
 - Trigger ingestion and show progress/status/errors. [started]
 - Store an ingestion run record with source path/URI, file hash, size, MIME/type, parser/Docling version, timestamps, status, and error details. [started: run path/parser/status/counts + per-document hash + Docling CLI version label]
-- Link ingestion run → document → chunks → generated memory candidates/evidence citations.
-- Show document provenance and chunk lineage in the GUI.
+- Link ingestion run → document → chunks → generated memory candidates/evidence citations. [started: run → document → chunks]
+- Show document provenance and chunk lineage in the GUI. [started: documents, ingestion runs, chunk detail views]
 
 Acceptance:
 

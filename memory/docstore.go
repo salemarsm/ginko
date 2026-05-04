@@ -15,10 +15,10 @@ func (s *Store) UpsertDocument(ctx context.Context, d Document) (Document, error
 	if d.CreatedAt.IsZero() {
 		d.CreatedAt = time.Now().UTC()
 	}
-	_, err := s.db.ExecContext(ctx, `INSERT INTO documents(id, path, title, source_kind, source_ref, sha256, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(id) DO UPDATE SET path=excluded.path, title=excluded.title, source_kind=excluded.source_kind, source_ref=excluded.source_ref, sha256=excluded.sha256`,
-		d.ID, d.Path, d.Title, d.SourceKind, d.SourceRef, d.SHA256, formatTime(d.CreatedAt))
+	_, err := s.db.ExecContext(ctx, `INSERT INTO documents(id, ingestion_run_id, path, title, source_kind, source_ref, sha256, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET ingestion_run_id=excluded.ingestion_run_id, path=excluded.path, title=excluded.title, source_kind=excluded.source_kind, source_ref=excluded.source_ref, sha256=excluded.sha256`,
+		d.ID, d.IngestionRunID, d.Path, d.Title, d.SourceKind, d.SourceRef, d.SHA256, formatTime(d.CreatedAt))
 	return d, err
 }
 
@@ -106,7 +106,7 @@ func (s *Store) ListDocuments(ctx context.Context, limit int) ([]Document, error
 	if limit <= 0 || limit > 1000 {
 		limit = 200
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id, path, title, source_kind, source_ref, sha256, created_at FROM documents ORDER BY created_at DESC LIMIT ?`, limit)
+	rows, err := s.db.QueryContext(ctx, `SELECT id, COALESCE(ingestion_run_id, ''), path, title, source_kind, source_ref, sha256, created_at FROM documents ORDER BY created_at DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *Store) ListDocuments(ctx context.Context, limit int) ([]Document, error
 	for rows.Next() {
 		var d Document
 		var created string
-		if err := rows.Scan(&d.ID, &d.Path, &d.Title, &d.SourceKind, &d.SourceRef, &d.SHA256, &created); err != nil {
+		if err := rows.Scan(&d.ID, &d.IngestionRunID, &d.Path, &d.Title, &d.SourceKind, &d.SourceRef, &d.SHA256, &created); err != nil {
 			return nil, err
 		}
 		d.CreatedAt, _ = parseTime(created)
@@ -166,6 +166,36 @@ func nullableEmptyTime(s string) any {
 	return s
 }
 
+func (s *Store) ListIngestionRuns(ctx context.Context, limit int) ([]IngestionRun, error) {
+	if limit <= 0 || limit > 1000 {
+		limit = 100
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT id, source_path, recursive, parser, status, files_seen, documents_created, chunks_created, error, created_at, completed_at FROM ingestion_runs ORDER BY created_at DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []IngestionRun
+	for rows.Next() {
+		var r IngestionRun
+		var recursive int
+		var created string
+		var completed sql.NullString
+		if err := rows.Scan(&r.ID, &r.SourcePath, &recursive, &r.Parser, &r.Status, &r.FilesSeen, &r.DocumentsCreated, &r.ChunksCreated, &r.Error, &created, &completed); err != nil {
+			return nil, err
+		}
+		r.Recursive = recursive == 1
+		r.CreatedAt, _ = parseTime(created)
+		if completed.Valid {
+			if t, err := parseTime(completed.String); err == nil {
+				r.CompletedAt = &t
+			}
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) SearchChunks(ctx context.Context, req ChunkSearchRequest) ([]ChunkSearchResult, error) {
 	limit := req.Limit
 	if limit <= 0 || limit > 100 {
@@ -187,7 +217,7 @@ func (s *Store) SearchChunks(ctx context.Context, req ChunkSearchRequest) ([]Chu
 	}
 	args = append(args, limit)
 	query := `SELECT c.id, c.document_id, c.ordinal, c.heading_path, c.content, c.token_count, c.page_from, c.page_to, c.embedding_refs_json, c.created_at,
-		d.id, d.path, d.title, d.source_kind, d.source_ref, d.sha256, d.created_at`
+		d.id, COALESCE(d.ingestion_run_id, ''), d.path, d.title, d.source_kind, d.source_ref, d.sha256, d.created_at`
 	if join != "" {
 		query += `, bm25(chunks_fts)`
 	} else {
@@ -205,7 +235,7 @@ func (s *Store) SearchChunks(ctx context.Context, req ChunkSearchRequest) ([]Chu
 		var pageFrom, pageTo sql.NullInt64
 		var embeds, chunkCreated, docCreated string
 		if err := rows.Scan(&r.Chunk.ID, &r.Chunk.DocumentID, &r.Chunk.Ordinal, &r.Chunk.HeadingPath, &r.Chunk.Content, &r.Chunk.TokenCount, &pageFrom, &pageTo, &embeds, &chunkCreated,
-			&r.Document.ID, &r.Document.Path, &r.Document.Title, &r.Document.SourceKind, &r.Document.SourceRef, &r.Document.SHA256, &docCreated, &r.Score); err != nil {
+			&r.Document.ID, &r.Document.IngestionRunID, &r.Document.Path, &r.Document.Title, &r.Document.SourceKind, &r.Document.SourceRef, &r.Document.SHA256, &docCreated, &r.Score); err != nil {
 			return nil, err
 		}
 		if pageFrom.Valid {

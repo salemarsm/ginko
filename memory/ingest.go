@@ -73,7 +73,7 @@ func (s *Store) IngestPath(ctx context.Context, req IngestRequest) (IngestRespon
 		}
 		_ = s.UpsertIngestionRun(ctx, run)
 		resp.Run = run
-		payload, _ := json.Marshal(map[string]any{"run_id": run.ID, "path": run.SourcePath, "recursive": run.Recursive, "status": run.Status, "documents": run.DocumentsCreated, "chunks": run.ChunksCreated, "skipped": resp.Skipped})
+		payload, _ := json.Marshal(map[string]any{"run_id": run.ID, "path": run.SourcePath, "recursive": run.Recursive, "status": run.Status, "documents": run.DocumentsCreated, "chunks": run.ChunksCreated, "document_ids": documentIDs(resp.Documents), "chunk_ids": chunkIDs(resp.Chunks), "skipped": resp.Skipped})
 		_ = s.AppendEvent(ctx, Event{Kind: "document.ingested", Payload: string(payload), Source: Source{Kind: "ingest", Ref: run.ID}})
 		return resp, runErr
 	}
@@ -189,7 +189,7 @@ func (s *Store) ingestTextFile(ctx context.Context, runID, path string) (Documen
 	}
 	sum := sha256.Sum256(b)
 	hash := hex.EncodeToString(sum[:])
-	doc := Document{ID: "doc_" + hash[:32], Path: path, Title: filepath.Base(path), SourceKind: "file", SourceRef: path, SHA256: hash}
+	doc := Document{ID: "doc_" + hash[:32], IngestionRunID: runID, Path: path, Title: filepath.Base(path), SourceKind: "file", SourceRef: path, SHA256: hash}
 	doc, err = s.UpsertDocument(ctx, doc)
 	if err != nil {
 		return Document{}, nil, err
@@ -238,7 +238,7 @@ func (s *Store) ingestDoclingFile(ctx context.Context, runID, path string) (Docu
 	if text == "" {
 		return Document{}, nil, errors.New("docling produced empty markdown")
 	}
-	doc := Document{ID: "doc_" + hash[:32], Path: path, Title: filepath.Base(path), SourceKind: "file:docling", SourceRef: path, SHA256: hash}
+	doc := Document{ID: "doc_" + hash[:32], IngestionRunID: runID, Path: path, Title: filepath.Base(path), SourceKind: "file:docling", SourceRef: path, SHA256: hash}
 	doc, err = s.UpsertDocument(ctx, doc)
 	if err != nil {
 		return Document{}, nil, err
@@ -317,6 +317,22 @@ func splitMarkdownChunks(text string, maxRunes int) []string {
 	flush()
 	if len(out) == 0 {
 		out = []string{fmt.Sprintf("%s", strings.TrimSpace(text))}
+	}
+	return out
+}
+
+func documentIDs(docs []Document) []string {
+	out := make([]string, 0, len(docs))
+	for _, d := range docs {
+		out = append(out, d.ID)
+	}
+	return out
+}
+
+func chunkIDs(chunks []Chunk) []string {
+	out := make([]string, 0, len(chunks))
+	for _, c := range chunks {
+		out = append(out, c.ID)
 	}
 	return out
 }

@@ -69,6 +69,7 @@ func (s *Server) routes() {
 		s.mux.HandleFunc("POST "+prefix+"/supersede/{id}", s.handleSupersede)
 		s.mux.HandleFunc("GET "+prefix+"/events", s.handleEvents)
 		s.mux.HandleFunc("GET "+prefix+"/documents", s.handleDocuments)
+		s.mux.HandleFunc("GET "+prefix+"/ingestion-runs", s.handleIngestionRuns)
 		s.mux.HandleFunc("POST "+prefix+"/ingest", s.handleIngest)
 		s.mux.HandleFunc("POST "+prefix+"/chunks/search", s.handleChunkSearch)
 	}
@@ -241,6 +242,15 @@ func (s *Server) handleChunkSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	items, err := s.store.SearchChunks(r.Context(), req)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) handleIngestionRuns(w http.ResponseWriter, r *http.Request) {
+	items, err := s.store.ListIngestionRuns(r.Context(), atoiDefault(r.URL.Query().Get("limit"), 100))
 	if err != nil {
 		writeError(w, err)
 		return

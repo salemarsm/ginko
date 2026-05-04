@@ -117,6 +117,8 @@ func (s *Store) Migrate(ctx context.Context) error {
 			completed_at TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_ingestion_runs_created ON ingestion_runs(created_at DESC);`,
+		`ALTER TABLE documents ADD COLUMN ingestion_run_id TEXT;`,
+		`CREATE INDEX IF NOT EXISTS idx_documents_ingestion_run ON documents(ingestion_run_id);`,
 		`CREATE TABLE IF NOT EXISTS chunks (
 			id TEXT PRIMARY KEY,
 			document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
