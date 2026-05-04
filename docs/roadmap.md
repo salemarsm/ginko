@@ -193,29 +193,52 @@ Goal: ingest documents as evidence and generate memory candidates from them.
 
 ## v0.6 — Retrieval quality
 
-Goal: make context retrieval high-signal and cheap.
+Goal: make retrieval high-signal, explainable, local-first, and cheap while preserving canonical memory semantics.
+
+Retrieval must remain layered:
+
+- SQLite remains the canonical source of truth.
+- SQLite FTS5/BM25-style ranking remains the lexical baseline.
+- Embeddings are optional indexes, not memory.
+- RAG chunks are evidence, not canonical memories.
+- LLMs may suggest or consume context, but do not own memory state.
 
 ### Must have
 
-- ranking formula combining FTS, scope, confidence, recency, and type
-- retrieval evaluation harness with precision/nDCG-style fixtures [started post-alpha]
-- BM25-backed FTS candidate ranking [started post-alpha]
-- `context_id` and feedback capture endpoint [started post-alpha]
-- token budget allocator by category
-- supersession-aware retrieval
-- context cache keyed by query/scope/version
-- benchmarks for retrieval quality and latency
+- lexical retrieval with SQLite FTS5 as the default candidate generator [started post-alpha]
+- prioritize exact technical terms: IDs, commands, errors, filenames, endpoints, code symbols, and acronyms [started post-alpha]
+- expose lexical/BM25-style score where possible as `lexical_score`
+- optional semantic retrieval with embeddings via local or remote adapters; no embedding provider is required
+- preserve `embedding_refs_json` as a bridge while keeping vector stores outside canonical truth
+- hybrid ranker combining lexical score, semantic score, confidence, recency, scope, memory type, provenance quality, and lifecycle/status
+- explainable ranking metadata: `semantic_score`, `recency_score`, `confidence_score`, `provenance_score`, `final_score`, and `rank_reason`
+- penalize or exclude `superseded`, `deleted`, `inactive`, and expired memories from current-truth retrieval
+- contradiction-aware retrieval that surfaces possible conflicts between active memories instead of hiding ambiguity
+- integrate hybrid ranking into `POST /api/context`, `POST /api/v1/context`, and MCP `memory_context`
+- keep context compact, ordered by relevance/usefulness, and bounded by `max_tokens`
+- retrieval evaluation harness with fixtures for exact technical terms, semantic paraphrase, supersession, conflicts, token limits, and global-vs-project scope [started post-alpha]
 
 ### Should have
 
-- optional vector adapter interface
-- sqlite-vss/vec or external vector index adapter
-- hybrid reranking
+- `memory_embeddings` auxiliary table
+- `chunk_embeddings` auxiliary table
+- `retrieval_eval_runs` and `retrieval_eval_items` auxiliary tables
+- sqlite-vec/sqlite-vss adapter where available
+- external vector index adapter only when explicitly configured
 - per-agent retrieval profiles
+- ranking debug mode and JSON/Markdown evaluation reports
+- context cache keyed by query/scope/subject/store version
+- benchmarks for retrieval quality and latency
 
 ### Exit criteria
 
 - `/api/context` returns compact, relevant memory under budget with predictable latency.
+- lexical retrieval works without embeddings.
+- semantic retrieval works when an embedding adapter is configured.
+- `/api/search` and `/api/context` can expose ranking metadata without breaking existing clients.
+- superseded/deleted/inactive/expired memories are not returned as current truth.
+- active-memory conflicts are surfaced in ranking/context metadata.
+- evaluation fixtures cover lexical precision, semantic recall, hybrid ranking, context quality, supersession, conflict handling, token budget, and scope priority.
 
 ## v0.7 — Packaging and ecosystem
 

@@ -234,17 +234,69 @@ Acceptance:
 
 ## P2 — Retrieval quality and token economy
 
-### RET-001 — Ranking formula
+### RET-001 — Ranking metadata shape
 
-- BM25-backed FTS ranking exists as first retrieval upgrade.
-- Combine FTS rank, scope priority, confidence, recency, and type weights.
-- Consider hybrid score after the baseline is measurable, e.g. BM25 adjusted by confidence and type-aware recency decay.
-- Add RRF-style fusion once multiple candidate generators exist.
-- Document formula.
+- Define backwards-compatible ranking metadata for `/api/search` and `/api/context`.
+- Include optional fields: `lexical_score`, `semantic_score`, `recency_score`, `confidence_score`, `provenance_score`, `final_score`, and `rank_reason`.
+- Prefer opt-in metadata via `include_ranking` or an additive `ranking` object.
 
 Acceptance:
 
-- `/api/context` order is explainable.
+- Existing clients continue working without ranking metadata.
+- New clients can explain why a memory was retrieved.
+
+### RET-007 — Lexical score exposure
+
+- Expose FTS5/BM25-style lexical score where possible.
+- Preserve exact matching behavior for technical terms, IDs, commands, errors, filenames, endpoints, code symbols, and acronyms.
+
+Acceptance:
+
+- Exact technical queries rank exact lexical matches above weaker semantic matches.
+
+### RET-008 — Optional embedding adapter interface
+
+- Add provider-neutral embedding adapter interface.
+- Support local or remote adapters without coupling to a specific provider.
+- Keep embeddings optional.
+
+Acceptance:
+
+- The system runs fully without embeddings.
+- Semantic retrieval can be enabled through configuration when an adapter exists.
+
+### RET-009 — Hybrid ranker
+
+- Combine lexical score, semantic score, confidence, recency, scope, memory type, provenance quality, and lifecycle/status.
+- Penalize or exclude superseded, deleted, inactive, and expired memories.
+- Produce `final_score` and `rank_reason`.
+
+Acceptance:
+
+- `/api/context` order is explainable and favors active canonical memories with strong provenance.
+
+### RET-010 — Retrieval schema extensions
+
+- Add auxiliary tables without breaking `memories`:
+  - `memory_embeddings`
+  - `chunk_embeddings`
+  - `retrieval_eval_runs`
+  - `retrieval_eval_items`
+- Preserve `embedding_refs_json` as an adapter bridge where useful.
+
+Acceptance:
+
+- SQLite remains the canonical store and vector indexes remain derived.
+
+### RET-011 — Supersession/conflict-aware retrieval
+
+- Do not return superseded memories as current truth.
+- Detect possible conflicts between active memories.
+- Surface ambiguity through metadata instead of hiding it.
+
+Acceptance:
+
+- Retrieval fixtures cover superseded memories and active-memory conflicts.
 
 ### RET-005 — Progressive disclosure API/MCP flow
 
@@ -290,6 +342,8 @@ Acceptance:
 
 - Add synthetic corpus generator.
 - Expand retrieval eval fixtures with annotated expected top-k prompts.
+- Measure lexical precision, semantic recall, final hybrid ranking, and generated context quality.
+- Include fixtures for exact technical terms, semantic paraphrase, superseded memory, conflicting memories, token limits, and global-vs-project scope.
 - Measure precision@5 / nDCG@10 for retrieval changes.
 - Measure search latency at 1k/10k/100k memories.
 - Measure context build latency.
@@ -297,6 +351,7 @@ Acceptance:
 Acceptance:
 
 - README can include honest benchmark numbers and retrieval-quality baseline numbers.
+- Retrieval changes must pass fixtures before release.
 
 ## P2 — Governance
 

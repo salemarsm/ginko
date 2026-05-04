@@ -44,3 +44,45 @@ Memory suggestion details: [Suggestion engine](suggestion-engine.md).
 `GET /api/ingestion-runs` returns recent ingestion runs with parser/version, source path, recursive flag, status, counts, timestamps, and error details. Documents include `ingestion_run_id`, so evidence can be traced from run → document → chunks.
 
 `POST /api/documents/{id}/suggest` extracts memory candidates from the document chunks and preserves evidence provenance as `source.kind=chunk` and `source.ref=<document_id>:<chunk_id>`. Pass `{ "store": true }` to write the candidates immediately; default is review-only.
+
+## Retrieval ranking metadata (planned v0.6)
+
+Search and context endpoints should remain backwards compatible while allowing clients to opt into ranking details.
+
+Planned endpoints:
+
+- `POST /api/search`
+- `POST /api/v1/search`
+- `POST /api/context`
+- `POST /api/v1/context`
+
+Recommended request flag:
+
+```json
+{ "include_ranking": true }
+```
+
+Recommended metadata shape:
+
+```json
+{
+  "ranking": {
+    "lexical_score": 0.82,
+    "semantic_score": 0.76,
+    "recency_score": 0.44,
+    "confidence_score": 0.95,
+    "provenance_score": 0.90,
+    "final_score": 0.87,
+    "rank_reason": "exact endpoint match + high confidence + project scope"
+  }
+}
+```
+
+Compatibility rules:
+
+- Existing clients should keep receiving the current memory/context shapes unless they opt into ranking metadata.
+- Ranking metadata is derived retrieval state, not canonical memory.
+- `lexical_score` must be available without embeddings when FTS5/BM25 scoring is used.
+- `semantic_score` is present only when an embedding adapter is configured and used.
+- Superseded, deleted, inactive, or expired memories must not appear as current truth in default context responses.
+- If active memories conflict, the API should surface ambiguity through metadata instead of silently choosing a winner.

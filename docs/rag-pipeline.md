@@ -39,3 +39,22 @@ Evidence link:
 ```txt
 doc_id=..., chunk_id=...
 ```
+
+## Retrieval and embeddings
+
+RAG retrieval and memory retrieval may both use lexical and semantic indexes, but they remain separate layers.
+
+- Memory retrieval returns canonical conclusions from `memories`.
+- Chunk retrieval returns evidence from `chunks`.
+- Embeddings over memories are optional retrieval indexes.
+- Embeddings over chunks are optional evidence indexes.
+- Vector search may help find candidates, but it never becomes the canonical store.
+
+Planned auxiliary tables:
+
+- `memory_embeddings`: derived semantic index rows for canonical memories
+- `chunk_embeddings`: derived semantic index rows for evidence chunks
+- `retrieval_eval_runs`: evaluation run metadata
+- `retrieval_eval_items`: per-query expected/actual retrieval results
+
+A citation-aware context builder should prefer compact canonical memories, with evidence links or evidence snippets only when useful and within `max_tokens`.
