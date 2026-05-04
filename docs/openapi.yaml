@@ -206,6 +206,38 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Event'
+  /api/ingest:
+    post:
+      summary: Ingest a file or directory into RAG documents/chunks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+      responses:
+        '200':
+          description: Ingestion run result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResponse'
+  /api/documents:
+    get:
+      summary: List ingested RAG documents
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 200 }
+      responses:
+        '200':
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
 components:
   securitySchemes:
     bearerAuth:
@@ -220,6 +252,64 @@ components:
       required: true
       schema: { type: string }
   schemas:
+    IngestRequest:
+      type: object
+      required: [path]
+      properties:
+        path: { type: string }
+        recursive: { type: boolean, default: false }
+    IngestionRun:
+      type: object
+      properties:
+        id: { type: string }
+        source_path: { type: string }
+        recursive: { type: boolean }
+        parser: { type: string }
+        status: { type: string }
+        files_seen: { type: integer }
+        documents_created: { type: integer }
+        chunks_created: { type: integer }
+        error: { type: string }
+        created_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time, nullable: true }
+    IngestResponse:
+      type: object
+      properties:
+        run:
+          $ref: '#/components/schemas/IngestionRun'
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        chunks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Chunk'
+        skipped:
+          type: array
+          items: { type: string }
+    Document:
+      type: object
+      properties:
+        id: { type: string }
+        path: { type: string }
+        title: { type: string }
+        source_kind: { type: string }
+        source_ref: { type: string }
+        sha256: { type: string }
+        created_at: { type: string, format: date-time }
+    Chunk:
+      type: object
+      properties:
+        id: { type: string }
+        document_id: { type: string }
+        ordinal: { type: integer }
+        heading_path: { type: string }
+        content: { type: string }
+        token_count: { type: integer }
+        page_from: { type: integer, nullable: true }
+        page_to: { type: integer, nullable: true }
+        created_at: { type: string, format: date-time }
     Source:
       type: object
       required: [kind, ref]

@@ -221,9 +221,10 @@ Acceptance:
 
 ### RAG-004 — GUI Docling ingestion flow
 
-- Add GUI upload/select flow for Docling-supported documents.
-- Trigger ingestion and show progress/status/errors.
-- Store an ingestion run record with source path/URI, file hash, size, MIME/type, parser/Docling version, timestamps, status, and error details.
+- Add GUI upload/select flow for Docling-supported documents. [started: server-side path ingest for text-like files]
+- Support recursive folder ingestion for RAG sources. [started: CLI/API/GUI path flow]
+- Trigger ingestion and show progress/status/errors. [started]
+- Store an ingestion run record with source path/URI, file hash, size, MIME/type, parser/Docling version, timestamps, status, and error details. [started: run path/parser/status/counts + per-document hash]
 - Link ingestion run → document → chunks → generated memory candidates/evidence citations.
 - Show document provenance and chunk lineage in the GUI.
 

@@ -23,6 +23,8 @@ Core endpoints:
 - `DELETE /api/memories/{id}`
 - `GET /api/events`
 - `GET /api/config`
+- `POST /api/ingest`
+- `GET /api/documents`
 - `GET /healthz`
 
 
@@ -31,3 +33,5 @@ Core endpoints:
 `GET /api/usage` returns memories plus usage counters derived from `context.built` and `context.feedback` events. The embedded GUI uses this for the dense table view and zombie/hot memory indicators.
 
 Memory suggestion details: [Suggestion engine](suggestion-engine.md).
+
+`POST /api/ingest` accepts `{ "path": "...", "recursive": true }` and ingests supported text-like files into the document/chunk RAG tables. Directories can be processed recursively. Each run emits a `document.ingested` event with source path, run id, document count, chunk count, and skipped files. PDF/DOCX ingestion is reserved for the Docling adapter; unsupported files are skipped with provenance in the run response.

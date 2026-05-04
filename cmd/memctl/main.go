@@ -60,6 +60,18 @@ func main() {
 				fmt.Printf("[%s %.2f] %s\nreason: %s\n\n", c.Memory.Type, c.Memory.Confidence, c.Memory.Content, c.Reason)
 			}
 		})
+	case "ingest":
+		if flag.NArg() < 2 {
+			log.Fatal("ingest requires file or directory path")
+		}
+		var out memory.IngestResponse
+		post(*addr+"/api/ingest", memory.IngestRequest{Path: flag.Arg(1), Recursive: true}, &out)
+		printJSONOrText(*jsonOut, out, func() {
+			fmt.Printf("%s %s: %d documents, %d chunks, %d skipped\n", out.Run.ID, out.Run.Status, len(out.Documents), len(out.Chunks), len(out.Skipped))
+			for _, s := range out.Skipped {
+				fmt.Println("skipped:", s)
+			}
+		})
 	case "remember":
 		content := strings.Join(flag.Args()[1:], " ")
 		if content == "" {
@@ -152,6 +164,7 @@ Commands:
   search <query>       search raw memories
   context <query>      print token-budgeted context for an agent prompt
   remember <content>   store a memory; reads stdin when content is empty
+  ingest <path>        ingest a file or directory recursively into RAG documents/chunks
   suggest <text>       suggest durable memories/learnings from text
   forget <id>          delete a memory
 

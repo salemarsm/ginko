@@ -34,8 +34,18 @@ const indexHTML = `<!doctype html>
   <section class="card">
     <div class="row" style="align-items:center;justify-content:space-between">
       <div class="stats" id="stats"></div>
-      <div><button onclick="newMemory()">Nova memória</button> <button class="secondary" onclick="loadEvents()">Eventos</button></div>
+      <div><button onclick="newMemory()">Nova memória</button> <button class="secondary" onclick="loadDocuments()">Docs RAG</button> <button class="secondary" onclick="loadEvents()">Eventos</button></div>
     </div>
+  </section>
+
+  <section class="card">
+    <label>RAG ingest path</label>
+    <div class="row" style="align-items:end">
+      <div><input id="ingestPath" placeholder="/path/file.md ou /path/pasta" /></div>
+      <div style="flex:0 0 160px"><label><input id="ingestRecursive" type="checkbox" checked style="width:auto"/> recursivo</label></div>
+      <div style="flex:0 0 120px"><button onclick="ingestPath()">Ingerir</button></div>
+    </div>
+    <p class="muted" id="ingestMsg">Arquivos texto/markdown/html/json/csv/tex entram agora; PDF/DOCX ficam rastreados como pendentes do adapter Docling.</p>
   </section>
 
   <main class="card" style="overflow:auto;max-height:70vh">
@@ -72,6 +82,8 @@ function newMemory(){clearForm();document.getElementById('editorTitle').textCont
 function clearForm(){for(const id of ['id','content','tags'])document.getElementById(id).value='';document.getElementById('type').value='preference';document.getElementById('scope').value='global';document.getElementById('subject').value=val('subjectFilter')||'botmaster';document.getElementById('sourceKind').value='gui';document.getElementById('sourceRef').value='local';document.getElementById('confidence').value='0.90';document.getElementById('formMsg').textContent=''}
 function editMemory(m){document.getElementById('editorTitle').textContent='Editar memória';document.getElementById('id').value=m.id;document.getElementById('type').value=m.type;document.getElementById('scope').value=m.scope;document.getElementById('subject').value=m.subject;document.getElementById('content').value=m.content;document.getElementById('sourceKind').value=m.source.kind;document.getElementById('sourceRef').value=m.source.ref;document.getElementById('confidence').value=m.confidence;document.getElementById('tags').value=(m.tags||[]).join(', ');document.getElementById('formMsg').textContent='';document.getElementById('editor').showModal()}
 async function forget(id){if(!confirm('Forget '+id+'?'))return;await api('/api/memories/'+id,{method:'DELETE'});loadTable()}
+async function ingestPath(){try{const path=val('ingestPath');if(!path)throw new Error('path obrigatório');document.getElementById('ingestMsg').textContent='ingerindo...';const out=await api('/api/ingest',{method:'POST',body:JSON.stringify({path,recursive:document.getElementById('ingestRecursive').checked})});document.getElementById('ingestMsg').textContent=out.run.id+' '+out.run.status+': '+out.documents.length+' docs, '+out.chunks.length+' chunks, '+out.skipped.length+' skipped';loadDocuments()}catch(e){document.getElementById('ingestMsg').innerHTML='<span class="err">'+esc(e.message)+'</span>'}}
+async function loadDocuments(){const docs=await api('/api/documents?limit=200');document.getElementById('rows').innerHTML='<tr><td colspan="8"><h3>Documentos RAG</h3>'+docs.map(d=>'<div style="border-bottom:1px solid var(--line);padding:8px"><b>'+esc(d.title)+'</b> <code>'+esc(d.id)+'</code><div>'+esc(d.path)+'</div><span class="muted">sha256 '+esc((d.sha256||'').slice(0,16))+'… · '+fmtDate(d.created_at)+'</span></div>').join('')+'</td></tr>'}
 async function loadEvents(){const items=await api('/api/events?limit=100');document.getElementById('rows').innerHTML='<tr><td colspan="8"><h3>Eventos</h3>'+items.map(e=>'<div style="border-bottom:1px solid var(--line);padding:8px"><b>'+esc(e.kind)+'</b> <code>'+esc(e.id)+'</code><pre>'+esc(e.payload)+'</pre><span class="muted">'+esc(e.source.kind)+':'+esc(e.source.ref)+' · '+fmtDate(e.created_at)+'</span></div>').join('')+'</td></tr>'}
 function fmtDate(s){return s?new Date(s).toLocaleString():''}
 function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}

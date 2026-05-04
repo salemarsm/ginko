@@ -103,6 +103,20 @@ func (s *Store) Migrate(ctx context.Context) error {
 			sha256 TEXT NOT NULL UNIQUE,
 			created_at TEXT NOT NULL
 		);`,
+		`CREATE TABLE IF NOT EXISTS ingestion_runs (
+			id TEXT PRIMARY KEY,
+			source_path TEXT NOT NULL,
+			recursive INTEGER NOT NULL CHECK(recursive IN (0, 1)),
+			parser TEXT NOT NULL,
+			status TEXT NOT NULL,
+			files_seen INTEGER NOT NULL DEFAULT 0,
+			documents_created INTEGER NOT NULL DEFAULT 0,
+			chunks_created INTEGER NOT NULL DEFAULT 0,
+			error TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			completed_at TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_ingestion_runs_created ON ingestion_runs(created_at DESC);`,
 		`CREATE TABLE IF NOT EXISTS chunks (
 			id TEXT PRIMARY KEY,
 			document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,

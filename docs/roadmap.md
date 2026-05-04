@@ -171,8 +171,9 @@ Goal: ingest documents as evidence and generate memory candidates from them.
 - document hashing and dedupe
 - chunking strategy with heading/page metadata
 - chunk FTS search
-- document/chunk GUI views with GUI upload/ingest flow for Docling-supported files
-- traceable ingestion runs with source file hash, source URI/path, parser version, timestamps, status/errors, document ID, and chunk IDs
+- document/chunk GUI views with GUI path ingest flow started for text-like files; Docling-supported binary formats pending adapter
+- recursive directory ingestion for RAG sources [started: native text-like files]
+- traceable ingestion runs with source file hash, source URI/path, parser version, timestamps, status/errors, document ID, and chunk IDs [started]
 - memory candidate extraction from chunks
 - citation links from memory to evidence
 
