@@ -5,7 +5,7 @@
 </p>
 
 ```bash
-# build/install from source today
+# download release archives from GitHub Releases, or build from source
 go install github.com/salemarsm/llm-memory/cmd/llm-memory@latest
 
 # connect Claude Code via the Ginko MCP setup

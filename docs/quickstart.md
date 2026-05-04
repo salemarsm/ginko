@@ -1,5 +1,27 @@
 # Quickstart
 
+## Install from release
+
+Download the latest `llm-memory` archive for your OS/architecture from GitHub Releases, unpack it, and put the binaries on `PATH`.
+
+The release archive contains:
+
+- `llm-memory`
+- `memctl`
+- `memmcp`
+- `memserver`
+
+Verify:
+
+```bash
+llm-memory version
+memmcp -version
+memctl -version
+memserver -version
+```
+
+## Build from source
+
 ```bash
 git clone https://github.com/salemarsm/llm-memory.git
 cd llm-memory
