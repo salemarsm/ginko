@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	_ = config.MaybeMigrateLegacyDataDir()
 	configPath := flag.String("config", "", "path to JSON config")
 	writeConfig := flag.String("write-config", "", "write default JSON config and exit")
 	showVersion := flag.Bool("version", false, "print version and exit")

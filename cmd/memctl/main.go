@@ -11,11 +11,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/salemarsm/llm-memory/config"
 	"github.com/salemarsm/llm-memory/internal/version"
 	"github.com/salemarsm/llm-memory/memory"
 )
 
 func main() {
+	_ = config.MaybeMigrateLegacyDataDir()
 	addr := flag.String("addr", envDefault("LLM_MEMORY_ADDR", "http://127.0.0.1:8787"), "llm-memory server URL")
 	subject := flag.String("subject", "", "memory subject")
 	scope := flag.String("scope", "global", "memory scope")

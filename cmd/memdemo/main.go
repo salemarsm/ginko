@@ -7,10 +7,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/salemarsm/llm-memory/config"
 	"github.com/salemarsm/llm-memory/memory"
 )
 
 func main() {
+	_ = config.MaybeMigrateLegacyDataDir()
 	ctx := context.Background()
 	path := "memory.db"
 	if len(os.Args) > 1 {

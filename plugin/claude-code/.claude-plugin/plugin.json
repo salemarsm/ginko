@@ -1,6 +1,21 @@
 {
   "name": "ginko",
-  "version": "0.1.0-alpha",
-  "description": "Persistent canonical memory for Claude Code, powered by llm-memory.",
-  "author": "Rafael Salema Marques"
+  "version": "0.2.0",
+  "description": "Persistent memory for your Claude Code agent. Like ginkgo biloba — but it actually works. Backed by SQLite, FTS5, and an auditable canonical memory store.",
+  "author": {
+    "name": "Rafael Salem",
+    "url": "https://github.com/salemarsm"
+  },
+  "homepage": "https://github.com/salemarsm/llm-memory",
+  "repository": "https://github.com/salemarsm/llm-memory",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "mcp",
+    "sqlite",
+    "fts5",
+    "canonical",
+    "agent",
+    "rag"
+  ]
 }

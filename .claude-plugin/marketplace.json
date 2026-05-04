@@ -1,0 +1,20 @@
+{
+  "name": "salemarsm/llm-memory",
+  "owner": {
+    "name": "Rafael Salem",
+    "url": "https://github.com/salemarsm"
+  },
+  "description": "Local-first canonical memory layer for AI coding agents. Distributes the ginko Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "ginko",
+      "source": "./plugin/claude-code",
+      "description": "Persistent memory for your Claude Code agent. Like ginkgo biloba — but it actually works.",
+      "version": "0.2.0",
+      "category": "memory",
+      "tags": ["memory", "mcp", "sqlite", "fts5", "canonical"],
+      "homepage": "https://github.com/salemarsm/llm-memory",
+      "license": "MIT"
+    }
+  ]
+}

@@ -18,9 +18,10 @@ import (
 	"github.com/salemarsm/llm-memory/internal/version"
 )
 
-const defaultDirName = ".llm-memory"
+const defaultDirName = ".ginko"
 
 func main() {
+	_ = config.MaybeMigrateLegacyDataDir()
 	home, _ := os.UserHomeDir()
 	defaultHome := filepath.Join(home, defaultDirName)
 	homeDir := flag.String("home", envDefault("LLM_MEMORY_HOME", defaultHome), "llm-memory home directory")
@@ -382,7 +383,7 @@ Prefer compact memories over raw document chunks.`)
 }
 
 func configPath(home string) string { return filepath.Join(home, "config.json") }
-func dbPath(home string) string     { return filepath.Join(home, "memory.db") }
+func dbPath(home string) string     { return filepath.Join(home, "ginko.db") }
 
 func findSibling(name string) (string, error) {
 	exe, err := os.Executable()
@@ -437,7 +438,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, `llm-memory [flags] <command>
 
 Commands:
-  init                    create ~/.llm-memory/config.json and database path
+  init                    create ~/.ginko/config.json and database path
   doctor                  check binaries, config, auth policy, and port
   token create|list|revoke manage local API bearer token config
   setup claude-code       configure Claude Code MCP server (use --dry-run first)
@@ -448,5 +449,5 @@ Commands:
   ui                      run memserver with local config
 
 Flags:
-  -home DIR               default ~/.llm-memory or LLM_MEMORY_HOME`)
+  -home DIR               default ~/.ginko or LLM_MEMORY_HOME`)
 }
