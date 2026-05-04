@@ -73,3 +73,32 @@ func TestWriteConfigModeAndRoundTrip(t *testing.T) {
 		t.Fatal("auth token did not round trip")
 	}
 }
+
+func TestMergeClaudeSettings(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	if err := os.WriteFile(path, []byte(`{"permissions":{"allow":["Bash(git status)"]},"mcpServers":{"other":{"command":"other"}}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	original, merged, err := mergeClaudeSettings(path, map[string]any{"command": "/bin/memmcp", "args": []string{"-db", "/tmp/memory.db"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if original == nil {
+		t.Fatal("expected original bytes for existing settings")
+	}
+	var out map[string]any
+	if err := json.Unmarshal(merged, &out); err != nil {
+		t.Fatal(err)
+	}
+	servers := out["mcpServers"].(map[string]any)
+	if _, ok := servers["other"]; !ok {
+		t.Fatal("existing MCP server was not preserved")
+	}
+	ginko := servers["ginko"].(map[string]any)
+	if ginko["command"] != "/bin/memmcp" {
+		t.Fatalf("unexpected ginko command: %#v", ginko)
+	}
+	if _, ok := out["permissions"]; !ok {
+		t.Fatal("unrelated settings were not preserved")
+	}
+}

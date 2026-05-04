@@ -1,0 +1,6 @@
+{
+  "name": "ginko",
+  "version": "0.1.0-alpha",
+  "description": "Persistent canonical memory for Claude Code, powered by llm-memory.",
+  "author": "Rafael Salema Marques"
+}

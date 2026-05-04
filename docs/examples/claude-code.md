@@ -1,9 +1,30 @@
-# Claude Code example
+# Claude Code setup
 
-Generate config:
+Ginko is the Claude Code-facing plugin/setup name for `llm-memory`.
+
+Dry-run first:
+
+```bash
+bin/llm-memory setup claude-code --dry-run
+```
+
+Apply:
+
+```bash
+bin/llm-memory setup claude-code
+```
+
+What it does:
+
+- finds Claude Code settings (`.claude/settings.json` in the current project if present, otherwise `~/.claude/settings.json`)
+- merges a `ginko` MCP server entry without overwriting unrelated settings
+- writes a `.bak` backup before modifying an existing file
+- points Claude Code at the local `memmcp` binary
+
+Legacy snippet-only flow remains available:
 
 ```bash
 bin/llm-memory install-mcp claude-code
 ```
 
-Add the generated MCP snippet to Claude Code's MCP configuration, then include the bootstrap instruction from [MCP docs](../mcp.md).
+See `plugin/claude-code/` for the Ginko plugin skeleton: MCP declaration, hooks, skill, and slash-command prompts.

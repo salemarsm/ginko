@@ -40,6 +40,8 @@ func main() {
 		must(doctor(*homeDir))
 	case "token":
 		must(tokenCommand(*homeDir, args))
+	case "setup":
+		must(setupCommand(*homeDir, args))
 	case "version":
 		fmt.Println("llm-memory", version.String())
 	case "paths":
@@ -209,6 +211,120 @@ func printMCPConfig(home string) error {
 	return nil
 }
 
+func setupCommand(home string, args []string) error {
+	if len(args) < 1 {
+		return errors.New("setup requires target: claude-code")
+	}
+	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
+	dryRun := fs.Bool("dry-run", false, "show changes without writing")
+	local := fs.Bool("local", false, "write .claude/settings.json in current directory")
+	configFile := fs.String("config", "", "explicit Claude Code settings.json path")
+	if err := fs.Parse(args[1:]); err != nil {
+		return err
+	}
+	switch args[0] {
+	case "claude-code":
+		return setupClaudeCode(home, *dryRun, *local, *configFile)
+	default:
+		return fmt.Errorf("unknown setup target %q", args[0])
+	}
+}
+
+func setupClaudeCode(home string, dryRun, local bool, explicitPath string) error {
+	if err := initProject(home); err != nil {
+		return err
+	}
+	memmcp, err := findSibling("memmcp")
+	if err != nil {
+		return err
+	}
+	path, err := claudeSettingsPath(local, explicitPath)
+	if err != nil {
+		return err
+	}
+	original, merged, err := mergeClaudeSettings(path, map[string]any{
+		"command": memmcp,
+		"args":    []string{"-db", dbPath(home)},
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Println("target:", path)
+	fmt.Println("mcp server: ginko")
+	if dryRun {
+		fmt.Println("dry-run: no files written")
+		fmt.Println(string(merged))
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	if original != nil {
+		backup := path + ".bak"
+		if err := os.WriteFile(backup, original, 0o600); err != nil {
+			return err
+		}
+		fmt.Println("backup:", backup)
+	}
+	if err := os.WriteFile(path, merged, 0o600); err != nil {
+		return err
+	}
+	fmt.Println("✓ configured Claude Code MCP server 'ginko'")
+	fmt.Println("settings:", path)
+	return nil
+}
+
+func claudeSettingsPath(local bool, explicitPath string) (string, error) {
+	if strings.TrimSpace(explicitPath) != "" {
+		return explicitPath, nil
+	}
+	if local {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(cwd, ".claude", "settings.json"), nil
+	}
+	cwd, err := os.Getwd()
+	if err == nil {
+		project := filepath.Join(cwd, ".claude", "settings.json")
+		if _, statErr := os.Stat(project); statErr == nil {
+			return project, nil
+		}
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".claude", "settings.json"), nil
+}
+
+func mergeClaudeSettings(path string, server map[string]any) ([]byte, []byte, error) {
+	settings := map[string]any{}
+	var original []byte
+	if b, err := os.ReadFile(path); err == nil {
+		original = b
+		if len(strings.TrimSpace(string(b))) > 0 {
+			if err := json.Unmarshal(b, &settings); err != nil {
+				return nil, nil, fmt.Errorf("parse %s: %w", path, err)
+			}
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, nil, err
+	}
+	servers, _ := settings["mcpServers"].(map[string]any)
+	if servers == nil {
+		servers = map[string]any{}
+	}
+	servers["ginko"] = server
+	settings["mcpServers"] = servers
+	merged, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		return nil, nil, err
+	}
+	return original, append(merged, '\n'), nil
+}
+
 func installMCP(home string, args []string) error {
 	if len(args) < 1 {
 		return errors.New("install-mcp requires target: claude-code, codex, openclaw, or print")
@@ -324,6 +440,7 @@ Commands:
   init                    create ~/.llm-memory/config.json and database path
   doctor                  check binaries, config, auth policy, and port
   token create|list|revoke manage local API bearer token config
+  setup claude-code       configure Claude Code MCP server (use --dry-run first)
   version                 print version, commit, and build date
   paths                   print effective paths
   mcp-config              print MCP server JSON snippet

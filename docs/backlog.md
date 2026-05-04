@@ -91,10 +91,10 @@ Acceptance:
 
 ### AGENT-001 — One-command agent setup skeleton
 
-- Add `llm-memory setup <agent>` or `llm-memory integrate <agent>`.
-- Start with dry-run output for `openclaw`, `claude-code`, `codex`, and `generic-mcp`.
-- Include exact manual config snippets.
-- Refuse unsafe config writes unless explicitly confirmed.
+- Add `llm-memory setup <agent>` or `llm-memory integrate <agent>`. [started: `setup claude-code`]
+- Start with dry-run output for `openclaw`, `claude-code`, `codex`, and `generic-mcp`. [started: Claude Code]
+- Include exact manual config snippets. [started: Ginko MCP server merge]
+- Refuse unsafe config writes unless explicitly confirmed. [started: dry-run + backup before write]
 
 Acceptance:
 
@@ -124,12 +124,12 @@ Acceptance:
 
 ### INT-001 — Claude Code integration doc test
 
-- Verify real config location/format.
+- Verify real config location/format. [started: `.claude/settings.json` merge path]
 - Add exact copy/paste instructions.
 
 Acceptance:
 
-- Fresh user can connect Claude Code from docs.
+- Fresh user can connect Claude Code from docs. [started]
 
 ### INT-002 — OpenClaw integration doc test
 

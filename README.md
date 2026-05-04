@@ -1,8 +1,20 @@
 # llm-memory
 
 <p align="center">
-  <strong>Local-first canonical memory for AI agents. Go + SQLite at the core. LLMs at the edge.</strong>
+  <strong>Persistent memory for Claude Code and coding agents. Single Go binary. SQLite. MCP-native.</strong>
 </p>
+
+```bash
+# build/install from source today
+go install github.com/salemarsm/llm-memory/cmd/llm-memory@latest
+
+# connect Claude Code via the Ginko MCP setup
+llm-memory setup claude-code --dry-run
+llm-memory setup claude-code
+```
+
+Ginko is the Claude Code-facing plugin/setup name for llm-memory.
+The canonical-memory architecture and white paper are below for readers who want the why after the quick start.
 
 <p align="center">
   <a href="https://pkg.go.dev/github.com/salemarsm/llm-memory"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-00ADD8?style=for-the-badge&logo=go&logoColor=white"></a>

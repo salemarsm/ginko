@@ -102,10 +102,10 @@ Goal: make memory feel transparent in Claude Code, Codex-like agents, OpenClaw, 
 
 ### Must have
 
-- documented Claude Code MCP setup with tested config
+- documented Claude Code MCP setup with tested config [started: Ginko setup docs/plugin skeleton]
 - documented Codex fallback using `memctl context`
 - documented OpenClaw integration pattern
-- one-command setup/integration skeleton for major agents, with dry-run mode first
+- one-command setup/integration skeleton for major agents, with dry-run mode first [started: `llm-memory setup claude-code` / Ginko]
 - MCP contract tests
 - bootstrap prompts per agent
 - memory write policy examples
