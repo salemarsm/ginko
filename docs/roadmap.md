@@ -174,8 +174,8 @@ Goal: ingest documents as evidence and generate memory candidates from them.
 - document/chunk GUI views with GUI path ingest flow for text-like files plus PDF/DOCX/PPTX/XLSX/images through Docling CLI when installed
 - recursive directory ingestion for RAG sources [started: native text-like files + Docling CLI formats]
 - traceable ingestion runs with source file hash, source URI/path, parser version, timestamps, status/errors, document ID, and chunk IDs [started: API + GUI lineage]
-- memory candidate extraction from chunks
-- citation links from memory to evidence
+- memory candidate extraction from chunks [started: heuristic candidates with chunk provenance]
+- citation links from memory to evidence [started: source.kind=chunk, source.ref=document_id:chunk_id]
 
 ### Should have
 

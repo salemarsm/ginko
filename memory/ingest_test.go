@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -126,5 +127,37 @@ func TestSearchChunks(t *testing.T) {
 	}
 	if len(results) != 1 || results[0].Document.Title != "evidence.md" {
 		t.Fatalf("unexpected chunk results: %#v", results)
+	}
+}
+
+func TestSuggestMemoriesFromDocument(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "decisions.md")
+	body := "# Decisions\n\nWe decided to use SQLite as the canonical store.\n\nNeed to add citation links from memory to evidence."
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ingested, err := s.IngestPath(ctx, IngestRequest{Path: path})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := s.SuggestMemoriesFromDocument(ctx, ChunkSuggestRequest{DocumentID: ingested.Documents[0].ID, Subject: "llm-memory", Scope: ScopeProject, Limit: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Candidates) < 2 {
+		t.Fatalf("expected candidates from document chunks, got %#v", resp.Candidates)
+	}
+	for _, c := range resp.Candidates {
+		if c.Memory.Source.Kind != "chunk" || !strings.Contains(c.Memory.Source.Ref, ingested.Documents[0].ID+":") {
+			t.Fatalf("candidate lacks chunk provenance: %#v", c.Memory.Source)
+		}
 	}
 }

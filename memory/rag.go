@@ -37,3 +37,18 @@ type ChunkSearchResult struct {
 	Document Document `json:"document"`
 	Score    float64  `json:"score"`
 }
+
+type ChunkSuggestRequest struct {
+	DocumentID    string  `json:"document_id"`
+	Subject       string  `json:"subject"`
+	Scope         Scope   `json:"scope"`
+	Limit         int     `json:"limit"`
+	MinConfidence float64 `json:"min_confidence"`
+	Store         bool    `json:"store"`
+}
+
+type ChunkSuggestResponse struct {
+	Document   Document          `json:"document"`
+	Candidates []MemoryCandidate `json:"candidates"`
+	Stored     []Memory          `json:"stored,omitempty"`
+}

@@ -72,6 +72,7 @@ func (s *Server) routes() {
 		s.mux.HandleFunc("GET "+prefix+"/ingestion-runs", s.handleIngestionRuns)
 		s.mux.HandleFunc("POST "+prefix+"/ingest", s.handleIngest)
 		s.mux.HandleFunc("POST "+prefix+"/chunks/search", s.handleChunkSearch)
+		s.mux.HandleFunc("POST "+prefix+"/documents/{id}/suggest", s.handleDocumentSuggest)
 	}
 }
 
@@ -233,6 +234,21 @@ func (s *Server) handleSupersede(w http.ResponseWriter, r *http.Request) {
 	}
 	s.appendEvent(r, memory.Event{Kind: "memory.superseded", Payload: r.PathValue("id") + " -> " + created.ID, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
 	writeJSON(w, http.StatusOK, created)
+}
+
+func (s *Server) handleDocumentSuggest(w http.ResponseWriter, r *http.Request) {
+	var req memory.ChunkSuggestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorStatus(w, http.StatusBadRequest, err)
+		return
+	}
+	req.DocumentID = r.PathValue("id")
+	resp, err := s.store.SuggestMemoriesFromDocument(r.Context(), req)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *Server) handleChunkSearch(w http.ResponseWriter, r *http.Request) {

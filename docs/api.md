@@ -26,6 +26,7 @@ Core endpoints:
 - `POST /api/ingest`
 - `GET /api/documents`
 - `GET /api/ingestion-runs`
+- `POST /api/documents/{id}/suggest`
 - `POST /api/chunks/search`
 - `GET /healthz`
 
@@ -41,3 +42,5 @@ Memory suggestion details: [Suggestion engine](suggestion-engine.md).
 `POST /api/chunks/search` accepts `{ "text": "...", "document_id": "optional", "limit": 20 }` and returns chunk results with document provenance and BM25 score. Use this as the evidence search surface; canonical memories remain separate.
 
 `GET /api/ingestion-runs` returns recent ingestion runs with parser/version, source path, recursive flag, status, counts, timestamps, and error details. Documents include `ingestion_run_id`, so evidence can be traced from run → document → chunks.
+
+`POST /api/documents/{id}/suggest` extracts memory candidates from the document chunks and preserves evidence provenance as `source.kind=chunk` and `source.ref=<document_id>:<chunk_id>`. Pass `{ "store": true }` to write the candidates immediately; default is review-only.

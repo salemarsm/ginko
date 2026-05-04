@@ -253,3 +253,92 @@ func (s *Store) SearchChunks(ctx context.Context, req ChunkSearchRequest) ([]Chu
 	}
 	return out, rows.Err()
 }
+
+func (s *Store) GetDocument(ctx context.Context, id string) (Document, error) {
+	var d Document
+	var created string
+	err := s.db.QueryRowContext(ctx, `SELECT id, COALESCE(ingestion_run_id, ''), path, title, source_kind, source_ref, sha256, created_at FROM documents WHERE id = ?`, id).Scan(&d.ID, &d.IngestionRunID, &d.Path, &d.Title, &d.SourceKind, &d.SourceRef, &d.SHA256, &created)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return Document{}, ErrNotFound
+		}
+		return Document{}, err
+	}
+	d.CreatedAt, _ = parseTime(created)
+	return d, nil
+}
+
+func (s *Store) SuggestMemoriesFromDocument(ctx context.Context, req ChunkSuggestRequest) (ChunkSuggestResponse, error) {
+	doc, err := s.GetDocument(ctx, req.DocumentID)
+	if err != nil {
+		return ChunkSuggestResponse{}, err
+	}
+	chunks, err := s.ListChunks(ctx, doc.ID)
+	if err != nil {
+		return ChunkSuggestResponse{}, err
+	}
+	limit := req.Limit
+	if limit <= 0 || limit > 20 {
+		limit = 10
+	}
+	min := req.MinConfidence
+	if min <= 0 {
+		min = 0.65
+	}
+	subject := strings.TrimSpace(req.Subject)
+	if subject == "" {
+		subject = doc.Title
+	}
+	scope := req.Scope
+	if scope == "" {
+		scope = ScopeProject
+	}
+	seen := map[string]bool{}
+	var candidates []MemoryCandidate
+	for _, chunk := range chunks {
+		for _, c := range suggestFromText(subject, scope, "chunk", chunk.Content) {
+			if c.Memory.Confidence < min {
+				continue
+			}
+			c.Memory.Source = Source{Kind: "chunk", Ref: doc.ID + ":" + chunk.ID}
+			c.Memory.Tags = appendUnique(c.Memory.Tags, "rag", "evidence", "doc:"+doc.ID, "chunk:"+chunk.ID)
+			key := strings.ToLower(string(c.Memory.Type) + "|" + c.Memory.Subject + "|" + c.Memory.Content)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			candidates = append(candidates, c)
+			if len(candidates) >= limit {
+				break
+			}
+		}
+		if len(candidates) >= limit {
+			break
+		}
+	}
+	resp := ChunkSuggestResponse{Document: doc, Candidates: candidates}
+	if req.Store {
+		for _, c := range candidates {
+			m, err := s.UpsertMemory(ctx, c.Memory)
+			if err != nil {
+				return ChunkSuggestResponse{}, err
+			}
+			resp.Stored = append(resp.Stored, m)
+		}
+	}
+	return resp, nil
+}
+
+func appendUnique(base []string, vals ...string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(base)+len(vals))
+	for _, v := range append(base, vals...) {
+		v = strings.TrimSpace(v)
+		if v == "" || seen[v] {
+			continue
+		}
+		seen[v] = true
+		out = append(out, v)
+	}
+	return out
+}
