@@ -7,6 +7,15 @@ before:
     - go mod tidy
 
 builds:
+  - id: ginko
+    main: ./cmd/ginko
+    binary: ginko
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
   - id: llm-memory
     main: ./cmd/llm-memory
     binary: llm-memory
@@ -45,11 +54,22 @@ builds:
       - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
 
 archives:
-  - formats: [tar.gz]
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - id: ginko-bundle
+    builds:
+      - ginko
+      - llm-memory
+      - memctl
+      - memmcp
+      - memserver
+    formats: [tar.gz]
+    name_template: "ginko_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - docs/whitepaper/llm-memory-whitepaper.pdf
 
 checksum:
   name_template: checksums.txt

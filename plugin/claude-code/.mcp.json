@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "ginko": {
-      "command": "memmcp",
-      "args": []
+      "command": "ginko",
+      "args": ["mcp"]
     }
   }
 }

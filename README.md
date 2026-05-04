@@ -4,18 +4,6 @@
   <strong>Persistent memory for Claude Code and coding agents. Single Go binary. SQLite. MCP-native.</strong>
 </p>
 
-```bash
-# download release archives from GitHub Releases, or build from source
-go install github.com/salemarsm/llm-memory/cmd/llm-memory@latest
-
-# connect Claude Code via the Ginko MCP setup
-llm-memory setup claude-code --dry-run
-llm-memory setup claude-code
-```
-
-Ginko is the Claude Code-facing plugin/setup name for llm-memory.
-The canonical-memory architecture and white paper are below for readers who want the why after the quick start.
-
 <p align="center">
   <a href="https://pkg.go.dev/github.com/salemarsm/llm-memory"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-00ADD8?style=for-the-badge&logo=go&logoColor=white"></a>
   <a href="https://github.com/salemarsm/llm-memory/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/salemarsm/llm-memory?style=for-the-badge"></a>
@@ -24,8 +12,40 @@ The canonical-memory architecture and white paper are below for readers who want
 </p>
 
 <p align="center">
-  <a href="#english">English</a> · <a href="#português">Português</a> · <a href="docs/quickstart.md">Quickstart</a> · <a href="docs/openapi.yaml">OpenAPI</a> · <a href="docs/competitive-engram.md">Engram comparison</a>
+  <a href="#ginko">Ginko</a> · <a href="#english">English</a> · <a href="#português">Português</a> · <a href="docs/quickstart.md">Quickstart</a> · <a href="docs/openapi.yaml">OpenAPI</a> · <a href="docs/whitepaper/llm-memory-whitepaper.pdf">White paper</a> · <a href="docs/competitive-engram.md">Engram comparison</a>
 </p>
+
+---
+
+<a id="ginko"></a>
+
+## Ginko — install for your Claude Code agent
+
+> Persistent memory for your Claude Code agent. Like ginkgo biloba — but it actually works.
+
+```bash
+go install github.com/salemarsm/llm-memory/cmd/ginko@latest
+ginko setup claude-code
+```
+
+Or via the Claude Code plugin marketplace (recommended):
+
+```text
+/plugin marketplace add salemarsm/llm-memory
+/plugin install ginko
+```
+
+That's it. Restart Claude Code and the memory tools are available to the agent.
+
+The plugin includes:
+
+- MCP server (`ginko mcp`)
+- Memory Protocol skill — teaches the agent when and how to remember
+- SessionStart hook — recovers context from previous sessions automatically
+- PreCompact hook — auto-checkpoints memory before context compaction
+- Slash commands `/ginko:save` and `/ginko:recall`
+
+For the design rationale, schema, retrieval pipeline, and competitive analysis, see the **[white paper](docs/whitepaper/llm-memory-whitepaper.pdf)** and the project documentation below. The codebase, white paper, and academic identity remain `llm-memory`; `ginko` is the distribution.
 
 ---
 

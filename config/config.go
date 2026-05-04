@@ -41,7 +41,7 @@ type EmbeddingConfig struct {
 func Default() Config {
 	return Config{
 		Server:   ServerConfig{Addr: "127.0.0.1:8787"},
-		Database: DatabaseConfig{Path: "./memory.db"},
+		Database: DatabaseConfig{Path: DefaultDBPath()},
 		LLM: LLMConfig{
 			Provider:  "none",
 			Model:     "",
