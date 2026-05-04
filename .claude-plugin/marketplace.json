@@ -1,7 +1,7 @@
 {
-  "name": "salemarsm/llm-memory",
+  "name": "ginko",
   "owner": {
-    "name": "Rafael Salem",
+    "name": "Rafael Salema Marques",
     "url": "https://github.com/salemarsm"
   },
   "description": "Local-first canonical memory layer for AI coding agents. Distributes the ginko Claude Code plugin.",
