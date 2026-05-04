@@ -54,6 +54,20 @@ func TestPlanUpdate_Merge(t *testing.T) {
 	}
 }
 
+func TestRewriteMCPArgsInjectsConfiguredDB(t *testing.T) {
+	got := rewriteMCPArgs(nil)
+	if len(got) != 2 || got[0] != "-db" || got[1] == "" {
+		t.Fatalf("unexpected mcp args: %#v", got)
+	}
+}
+
+func TestRewriteMCPArgsPreservesExplicitDB(t *testing.T) {
+	got := rewriteMCPArgs([]string{"-db", "/tmp/custom.db"})
+	if len(got) != 2 || got[0] != "-db" || got[1] != "/tmp/custom.db" {
+		t.Fatalf("unexpected mcp args: %#v", got)
+	}
+}
+
 func TestNormalizeClaudeCodeSetupArgs_LocalAlias(t *testing.T) {
 	got := normalizeClaudeCodeSetupArgs([]string{"--dry-run", "--local"})
 	want := []string{"--dry-run", "-scope", "project"}

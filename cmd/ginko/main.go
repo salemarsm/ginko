@@ -92,6 +92,8 @@ func main() {
 
 	args := rest
 	switch cmd {
+	case "mcp":
+		args = rewriteMCPArgs(rest)
 	case "save":
 		args = rewriteSaveArgs(rest)
 	case "context":
@@ -185,6 +187,25 @@ Examples:
 
 func setupClaudeCode(args []string) {
 	doSetupClaudeCode(args)
+}
+
+func rewriteMCPArgs(args []string) []string {
+	for _, arg := range args {
+		if arg == "-db" || arg == "--db" || strings.HasPrefix(arg, "-db=") || strings.HasPrefix(arg, "--db=") {
+			return args
+		}
+	}
+	return append([]string{"-db", ginkoDBPath()}, args...)
+}
+
+func ginkoDBPath() string {
+	cfgPath := config.DefaultConfigPath()
+	if _, err := os.Stat(cfgPath); err == nil {
+		if cfg, err := config.Load(cfgPath); err == nil && strings.TrimSpace(cfg.Database.Path) != "" {
+			return cfg.Database.Path
+		}
+	}
+	return config.DefaultDBPath()
 }
 
 func rewriteSaveArgs(args []string) []string {
