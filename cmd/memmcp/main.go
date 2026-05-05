@@ -213,9 +213,8 @@ func (s *mcpServer) callTool(call toolCall) (string, error) {
 		if err := json.Unmarshal(call.Arguments, &q); err != nil {
 			return "", err
 		}
-		if q.Subject == "" {
-			q.Subject = s.project
-		}
+		// Do NOT force-inject subject: memory_search is a cross-subject tool.
+		// Callers can pass subject explicitly to narrow results.
 		out, err := s.store.Search(ctx, q)
 		return pretty(out), err
 	case "memory_session_start":
