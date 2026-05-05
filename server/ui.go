@@ -53,11 +53,29 @@ const indexHTML = `<!doctype html>
     <label>RAG ingest path</label>
     <div class="row" style="align-items:end">
       <div><input id="ingestPath" placeholder="/path/file.md ou /path/pasta" /></div>
+      <div style="flex:0 0 100px"><button class="secondary" onclick="openBrowser()">Browse…</button></div>
       <div style="flex:0 0 160px"><label><input id="ingestRecursive" type="checkbox" checked style="width:auto"/> recursivo</label></div>
       <div style="flex:0 0 120px"><button onclick="ingestPath()">Ingerir</button></div>
     </div>
     <p class="muted" id="ingestMsg">Texto/markdown/html/json/csv/tex entram nativo; PDF/DOCX/PPTX/XLSX/imagens usam Docling CLI se instalado.</p>
   </section>
+
+<dialog id="browser" style="min-width:520px">
+  <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div><b>Selecionar path</b></div>
+    <button class="secondary" onclick="document.getElementById('browser').close()">✕</button>
+  </div>
+  <div class="row" style="align-items:center;gap:6px;margin-bottom:8px">
+    <code id="browserPath" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)"></code>
+    <button class="secondary" onclick="browserNav(document.getElementById('browserParent').value)">↑ Up</button>
+    <input type="hidden" id="browserParent"/>
+  </div>
+  <div id="browserList" style="max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:8px"></div>
+  <div class="row" style="margin-top:10px">
+    <button onclick="browserSelect(document.getElementById('browserPath').textContent)">Selecionar pasta atual</button>
+    <button class="secondary" onclick="document.getElementById('browser').close()">Cancelar</button>
+  </div>
+</dialog>
 
   <main class="card" style="overflow:auto;max-height:70vh">
     <table>
@@ -101,6 +119,9 @@ async function loadIngestionRuns(){const runs=await api('/api/ingestion-runs?lim
 async function loadEvents(){const items=await api('/api/events?limit=100');document.getElementById('rows').innerHTML='<tr><td colspan="8"><h3>Eventos</h3>'+items.map(e=>'<div style="border-bottom:1px solid var(--line);padding:8px"><b>'+esc(e.kind)+'</b> <code>'+esc(e.id)+'</code><pre>'+esc(e.payload)+'</pre><span class="muted">'+esc(e.source.kind)+':'+esc(e.source.ref)+' · '+fmtDate(e.created_at)+'</span></div>').join('')+'</td></tr>'}
 function fmtDate(s){return s?new Date(s).toLocaleString():''}
 function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+async function openBrowser(){await browserNav('');document.getElementById('browser').showModal()}
+async function browserNav(path){const data=await api('/api/browse'+(path?'?path='+encodeURIComponent(path):''));document.getElementById('browserPath').textContent=data.path;document.getElementById('browserParent').value=data.parent;const list=document.getElementById('browserList');list.innerHTML=data.entries.map(e=>'<div style="padding:7px 10px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;align-items:center;gap:8px" onclick=\''+( e.is_dir?'browserNav("'+e.path+'")':'browserSelect("'+e.path+'")'  )+'\''+'><span style="color:var(--muted)">'+(e.is_dir?'📁':'📄')+'</span><span>'+esc(e.name)+'</span>'+(e.is_dir?'':'<span class="muted" style="margin-left:auto;font-size:11px">selecionar</span>')+'</div>').join('')||'<div class="muted" style="padding:10px">pasta vazia</div>'}
+function browserSelect(path){document.getElementById('ingestPath').value=path;document.getElementById('browser').close()}
 api('/api/config').then(c=>document.getElementById('cfg').textContent='db '+c.database.path+' · llm '+c.llm.provider+'/'+(c.llm.model||'-')+' · embedding '+c.embedding.provider+'/'+(c.embedding.model||'-'));loadTable();
 </script>
 </body>

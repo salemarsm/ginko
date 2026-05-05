@@ -6,6 +6,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -77,6 +80,7 @@ func (s *Server) routes() {
 		s.mux.HandleFunc("POST "+prefix+"/ingest", s.handleIngest)
 		s.mux.HandleFunc("POST "+prefix+"/chunks/search", s.handleChunkSearch)
 		s.mux.HandleFunc("POST "+prefix+"/documents/{id}/suggest", s.handleDocumentSuggest)
+		s.mux.HandleFunc("GET "+prefix+"/browse", s.handleBrowse)
 	}
 }
 
@@ -389,6 +393,60 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, items)
+}
+
+type browseEntry struct {
+	Name  string `json:"name"`
+	IsDir bool   `json:"is_dir"`
+	Path  string `json:"path"`
+}
+
+type browseResult struct {
+	Path    string        `json:"path"`
+	Parent  string        `json:"parent"`
+	Entries []browseEntry `json:"entries"`
+}
+
+func (s *Server) handleBrowse(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Query().Get("path")
+	if path == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			writeErrorStatus(w, http.StatusInternalServerError, err)
+			return
+		}
+		path = home
+	}
+	path = filepath.Clean(path)
+
+	des, err := os.ReadDir(path)
+	if err != nil {
+		writeErrorStatus(w, http.StatusBadRequest, err)
+		return
+	}
+
+	result := browseResult{
+		Path:    path,
+		Parent:  filepath.Dir(path),
+		Entries: make([]browseEntry, 0),
+	}
+	for _, de := range des {
+		if strings.HasPrefix(de.Name(), ".") {
+			continue
+		}
+		result.Entries = append(result.Entries, browseEntry{
+			Name:  de.Name(),
+			IsDir: de.IsDir(),
+			Path:  filepath.Join(path, de.Name()),
+		})
+	}
+	sort.Slice(result.Entries, func(i, j int) bool {
+		if result.Entries[i].IsDir != result.Entries[j].IsDir {
+			return result.Entries[i].IsDir
+		}
+		return result.Entries[i].Name < result.Entries[j].Name
+	})
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) appendEvent(r *http.Request, e memory.Event) {
