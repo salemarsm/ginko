@@ -2,11 +2,12 @@
 
 ## Install from release
 
-Download the latest `llm-memory` archive for your OS/architecture from GitHub Releases, unpack it, and put the binaries on `PATH`.
+Download the latest `ginko` archive for your OS/architecture from GitHub Releases, unpack it, and put the binaries on `PATH`.
 
 The release archive contains:
 
-- `llm-memory`
+- `ginko`
+- `ginko-admin` (support binary used by `ginko`)
 - `memctl`
 - `memmcp`
 - `memserver`
@@ -14,7 +15,7 @@ The release archive contains:
 Verify:
 
 ```bash
-llm-memory version
+ginko version
 memmcp -version
 memctl -version
 memserver -version
@@ -23,17 +24,18 @@ memserver -version
 ## Build from source
 
 ```bash
-git clone https://github.com/salemarsm/llm-memory.git
-cd llm-memory
+git clone https://github.com/salemarsm/ginko.git
+cd ginko
 
-go build -o bin/llm-memory ./cmd/llm-memory
+go build -o bin/ginko ./cmd/ginko
+go build -o bin/ginko-admin ./cmd/ginko-admin
 go build -o bin/memserver ./cmd/memserver
 go build -o bin/memmcp ./cmd/memmcp
 go build -o bin/memctl ./cmd/memctl
 
-bin/llm-memory init
-bin/llm-memory doctor
-bin/llm-memory ui
+bin/ginko init
+bin/ginko doctor
+bin/ginko ui
 ```
 
 Open:

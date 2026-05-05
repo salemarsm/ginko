@@ -66,6 +66,6 @@ After significant sessions, save learnings:
   ginko save --type fact --subject "$(basename $PWD)" "root cause and fix"
   ginko save --type decision --subject "$(basename $PWD)" "architectural decision made"
 
-See also: https://github.com/salemarsm/llm-memory/blob/main/docs/agents/codex.md
+See also: https://github.com/salemarsm/ginko/blob/main/docs/agents/codex.md
 `)
 }

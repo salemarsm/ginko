@@ -48,7 +48,7 @@ func NormalizeProject(s string) string {
 
 func detectProjectConfig(cwd string) string {
 	for _, dir := range walkParents(cwd) {
-		b, err := os.ReadFile(filepath.Join(dir, ".llm-memory", "config.json"))
+		b, err := os.ReadFile(filepath.Join(dir, ".ginko", "config.json"))
 		if err != nil {
 			continue
 		}

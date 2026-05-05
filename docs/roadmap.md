@@ -4,7 +4,7 @@ Status: **experimental v0.x**. This roadmap is intentionally explicit about what
 
 ## Product thesis
 
-`llm-memory` should become a local-first canonical memory layer for agents:
+`ginko` should become a local-first canonical memory layer for agents:
 
 ```txt
 raw events -> evidence -> canonical memory -> token-budgeted context -> LLM client
@@ -37,7 +37,7 @@ Status: **mostly implemented**.
 - local web GUI
 - `memctl` CLI
 - `memserver`
-- `llm-memory` helper CLI
+- `ginko` helper CLI
 - `memmcp` MCP server
 - token-budgeted `/api/context`
 - heuristic `/api/suggest`
@@ -70,12 +70,12 @@ Goal: make the project safe and easy enough for real local agent workflows.
 ### Must have
 
 - API token support for HTTP API [implemented]
-- `llm-memory token create/list/revoke` [implemented]
+- `ginko token create/list/revoke` [implemented]
 - config support for auth settings [implemented]
 - MCP auth propagation where relevant
 - `install.sh` for local binary install
 - release builds attached to GitHub releases
-- `llm-memory upgrade` or documented upgrade path
+- `ginko upgrade` or documented upgrade path
 - CI on push/PR [post-alpha]
 - smoke tests for `memserver`, `memctl`, `memmcp`
 
@@ -108,7 +108,7 @@ Goal: make memory feel transparent in Claude Code, Codex-like agents, OpenClaw, 
 - documented Claude Code MCP setup with tested config [started: Ginko setup docs/plugin skeleton]
 - documented Codex fallback using `memctl context`
 - documented OpenClaw integration pattern
-- one-command setup/integration skeleton for major agents, with dry-run mode first [started: `llm-memory setup claude-code` / Ginko]
+- one-command setup/integration skeleton for major agents, with dry-run mode first [started: `ginko setup claude-code` / Ginko]
 - MCP contract tests
 - bootstrap prompts per agent
 - memory write policy examples
@@ -118,9 +118,9 @@ Goal: make memory feel transparent in Claude Code, Codex-like agents, OpenClaw, 
 
 ### Should have
 
-- `llm-memory integrate claude-code` writes/patches known config when safe
-- `llm-memory integrate codex` writes/patches known config when safe
-- `llm-memory integrate openclaw` writes/patches known config when safe
+- `ginko integrate claude-code` writes/patches known config when safe
+- `ginko integrate codex` writes/patches known config when safe
+- `ginko integrate openclaw` writes/patches known config when safe
 - agent-specific token budgets
 - config profiles per subject/project
 
@@ -171,13 +171,55 @@ Goal: improve trust, auditability, and correctness of stored memory.
 - [ ] Sensitive-data detector rejects memories containing patterns matching secrets (API keys, tokens).
 - [ ] `ginko doctor` reports no errors after a full governance workflow.
 
+## Cross-cutting milestone — Persistent inter-agent coordination
+
+Goal: let different agents and LLM runtimes cooperate through shared durable state without turning canonical memory into a chat queue.
+
+This is a separate coordination layer backed by the same local SQLite/MCP infrastructure. Canonical `memories` remain durable knowledge; coordination records are temporary or workflow-oriented interaction state.
+
+### Must have
+
+- separate `agent_signals` / coordination schema, not mixed directly into canonical `memories`
+- signal kinds: `notice`, `lease`, `handoff`, `conflict`, `review_request`, and `blocker`
+- lifecycle status: `active`, `acknowledged`, `expired`, `resolved`, `cancelled`
+- lease/lock semantics with `expires_at`; no infinite locks
+- project/topic scoping with stable `topic_key`
+- owner/target agent identity fields, e.g. OpenClaw, Claude Code, Codex, local model runner
+- MCP tools for listing, creating, acknowledging, resolving, and expiring signals
+- retrieval/context integration that summarizes active coordination state without overwhelming memory context
+- audit trail linking signals to related memories, sessions, files, or task IDs
+
+### Should have
+
+- GUI view for active leases, handoffs, blockers, and review requests
+- stale lease cleanup in `ginko doctor` or server maintenance
+- conflict escalation from `memory_remember` / contradiction detection into a `conflict` signal
+- handoff template for "agent A stopped here; agent B should continue there"
+- per-agent coordination profiles to avoid noisy cross-agent alerts
+- optional file/path lease helpers for coding-agent workflows
+
+### Non-goals
+
+- replacing a real-time message bus or pub/sub system
+- high-frequency agent chat
+- strong distributed locking across machines
+- using coordination records as canonical truth
+
+### Exit criteria
+
+- [ ] Claude Code and OpenClaw can share one database and see the same active coordination signals.
+- [ ] An agent can create a file/topic lease with expiry, and another agent sees it before editing.
+- [ ] Expired leases stop blocking work automatically.
+- [ ] A handoff signal can be created by one agent and consumed/acknowledged by another.
+- [ ] Conflicting memory writes can create a review/conflict signal instead of silently overwriting truth.
+
 ## v0.5 — RAG bridge with Docling
 
 Goal: ingest documents as evidence and generate memory candidates from them.
 
 ### Must have
 
-- `llm-memory ingest <file>` command
+- `ginko ingest <file>` command
 - Docling adapter design
 - document hashing and dedupe
 - chunking strategy with heading/page metadata

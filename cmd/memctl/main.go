@@ -11,21 +11,21 @@ import (
 	"os"
 	"strings"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/internal/version"
-	"github.com/salemarsm/llm-memory/memory"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/internal/version"
+	"github.com/salemarsm/ginko/memory"
 )
 
 func main() {
 	_ = config.MaybeMigrateLegacyDataDir()
-	addr := flag.String("addr", envDefault("LLM_MEMORY_ADDR", "http://127.0.0.1:8787"), "llm-memory server URL")
+	addr := flag.String("addr", envDefault("GINKO_ADDR", "http://127.0.0.1:8787"), "ginko server URL")
 	subject := flag.String("subject", "", "memory subject")
 	scope := flag.String("scope", "global", "memory scope")
 	typ := flag.String("type", "note", "memory type")
 	maxTokens := flag.Int("max-tokens", 1200, "context token budget")
 	jsonOut := flag.Bool("json", false, "print raw JSON")
 	showVersion := flag.Bool("version", false, "print version and exit")
-	token := flag.String("token", envDefault("LLM_MEMORY_API_TOKEN", ""), "bearer token or LLM_MEMORY_API_TOKEN")
+	token := flag.String("token", envDefault("GINKO_API_TOKEN", ""), "bearer token or GINKO_API_TOKEN")
 	flag.Parse()
 
 	if *showVersion {
@@ -229,11 +229,11 @@ Commands:
   forget <id>          delete a memory
 
 Flags:
-  -addr URL            default http://127.0.0.1:8787 or LLM_MEMORY_ADDR
+  -addr URL            default http://127.0.0.1:8787 or GINKO_ADDR
   -subject NAME        restrict/create subject
   -scope LIST          comma scopes, default global
   -type TYPE           memory type for remember, default note
   -max-tokens N        context budget, default 1200
-  -token TOKEN         bearer token or LLM_MEMORY_API_TOKEN
+  -token TOKEN         bearer token or GINKO_API_TOKEN
   -json                raw JSON output`)
 }

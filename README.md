@@ -1,18 +1,25 @@
-# llm-memory
+# Ginko
 
 <p align="center">
-  <strong>Persistent memory for Claude Code and coding agents. Single Go binary. SQLite. MCP-native.</strong>
+  <img src="docs/assets/ginko-brand.jpg" alt="Ginko — local-first memory for AI agents" width="820">
 </p>
 
 <p align="center">
-  <a href="https://pkg.go.dev/github.com/salemarsm/llm-memory"><img alt="Go Reference" src="https://img.shields.io/badge/go-reference-00ADD8?style=for-the-badge&logo=go&logoColor=white"></a>
-  <a href="https://github.com/salemarsm/llm-memory/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/salemarsm/llm-memory?style=for-the-badge"></a>
-  <img alt="SQLite" src="https://img.shields.io/badge/sqlite-source%20of%20truth-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
-  <img alt="Experimental" src="https://img.shields.io/badge/status-experimental-orange?style=for-the-badge">
+  <strong>Local-first memory for AI agents. SQLite source of truth. MCP-native.</strong><br>
+  <em>Persistent context for Claude Code, OpenClaw, Codex-style CLIs, and local model workflows.</em>
 </p>
 
 <p align="center">
-  <a href="#ginko">Ginko</a> · <a href="#english">English</a> · <a href="#português">Português</a> · <a href="docs/quickstart.md">Quickstart</a> · <a href="docs/openapi.yaml">OpenAPI</a> · <a href="docs/whitepaper/llm-memory-whitepaper.pdf">White paper</a> · <a href="docs/competitive-engram.md">Engram comparison</a>
+  <a href="https://pkg.go.dev/github.com/salemarsm/ginko"><img alt="Go Reference" src="https://img.shields.io/badge/Go-reference-30B080?style=for-the-badge&logo=go&logoColor=white&labelColor=000407"></a>
+  <a href="https://github.com/salemarsm/ginko/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-30B080?style=for-the-badge&labelColor=000407"></a>
+  <img alt="SQLite source of truth" src="https://img.shields.io/badge/SQLite-source%20of%20truth-103020?style=for-the-badge&logo=sqlite&logoColor=white&labelColor=000407">
+  <img alt="MCP native" src="https://img.shields.io/badge/MCP-native-30B080?style=for-the-badge&labelColor=000407">
+  <img alt="Local first" src="https://img.shields.io/badge/local--first-yes-206040?style=for-the-badge&labelColor=000407">
+  <img alt="Experimental" src="https://img.shields.io/badge/status-experimental-9FE870?style=for-the-badge&labelColor=000407">
+</p>
+
+<p align="center">
+  <a href="#ginko">Ginko</a> · <a href="#english">English</a> · <a href="#português">Português</a> · <a href="docs/quickstart.md">Quickstart</a> · <a href="docs/openapi.yaml">OpenAPI</a> · <a href="docs/whitepaper/ginko-whitepaper.pdf">White paper</a> · <a href="docs/competitive-engram.md">Engram comparison</a>
 </p>
 
 ---
@@ -26,14 +33,14 @@
 > **Note:** Ginko is unrelated to the [Ginkgo](https://onsi.github.io/ginkgo/) Go testing framework.
 
 ```bash
-go install github.com/salemarsm/llm-memory/cmd/ginko@latest
+go install github.com/salemarsm/ginko/cmd/ginko@latest
 ginko setup claude-code
 ```
 
 Or via the Claude Code plugin marketplace (recommended):
 
 ```text
-/plugin marketplace add salemarsm/llm-memory
+/plugin marketplace add salemarsm/ginko
 /plugin install ginko
 ```
 
@@ -47,7 +54,7 @@ The plugin includes:
 - PreCompact hook — auto-checkpoints memory before context compaction
 - Slash commands `/ginko:save` and `/ginko:recall`
 
-For the design rationale, schema, retrieval pipeline, and competitive analysis, see the **[white paper](docs/whitepaper/llm-memory-whitepaper.pdf)** and the project documentation below. The codebase, white paper, and academic identity remain `llm-memory`; `ginko` is the distribution.
+For the design rationale, schema, retrieval pipeline, and competitive analysis, see the **[white paper](docs/whitepaper/ginko-whitepaper.pdf)** and the project documentation below.
 
 ---
 
@@ -55,11 +62,11 @@ For the design rationale, schema, retrieval pipeline, and competitive analysis, 
 
 ## English
 
-`llm-memory` is a durable memory layer for AI agents, coding assistants, RAG systems, and local LLM workflows.
+`ginko` is a durable memory layer for AI agents, coding assistants, RAG systems, and local LLM workflows.
 
 It solves a common problem: agents often confuse chat history, vector search, document chunks, and durable memory.
 
-`llm-memory` keeps them separate.
+`ginko` keeps them separate.
 
 - **Memories** are compact, structured, auditable records.
 - **Documents and chunks** are evidence.
@@ -79,7 +86,7 @@ Implemented today:
 - append-only events
 - FTS5 memory search
 - HTTP API and local GUI
-- `memctl`, `memmcp`, and `llm-memory` CLIs
+- `memctl`, `memmcp`, and `ginko` CLIs
 - MCP tools: `memory_context`, `memory_suggest`, `memory_remember`, `memory_search`
 - heuristic memory suggestions
 - document/chunk schema foundation for future RAG ingestion
@@ -97,8 +104,8 @@ Planned / not production-ready yet:
 
 For readers who want the full model and rationale, see the white paper:
 
-- [llm-memory white paper PDF](docs/whitepaper/llm-memory-whitepaper.pdf)
-- [LaTeX source](docs/whitepaper/llm-memory-whitepaper.tex)
+- [Ginko white paper PDF](docs/whitepaper/ginko-whitepaper.pdf)
+- [LaTeX source](docs/whitepaper/ginko-whitepaper.tex)
 
 It covers the canonical-memory model, SQLite schema philosophy, retrieval/context pipeline, RAG boundaries, governance/auditability, and why embeddings remain optional indexes instead of the source of truth.
 
@@ -114,7 +121,7 @@ Vector databases are useful indexes, but they are poor sources of truth.
 
 Prompts are not databases. LLMs are not memory owners. Chat logs are not durable knowledge.
 
-`llm-memory` separates these layers:
+`ginko` separates these layers:
 
 ```txt
 raw events  -> audit trail
@@ -135,7 +142,7 @@ SQLite      -> source of truth
 | Chat history | Short-term continuity | No durable schema, noisy, context-window bound |
 | LangChain-style memory | App-level convenience | Often runtime-coupled and prompt-format dependent |
 | Plain SQLite | Durable local storage | You still need an agent memory model and retrieval policy |
-| `llm-memory` | Canonical durable memory for agents | Needs integration with your agent/runtime |
+| `ginko` | Canonical durable memory for agents | Needs integration with your agent/runtime |
 
 ## What you get
 
@@ -157,25 +164,25 @@ SQLite      -> source of truth
 
 ## Positioning vs similar projects
 
-Projects like Mem0, Zep, LangMem, sqlite-memory, and Engram validate the category. `llm-memory` should not compete as a generic "memory layer" clone.
+Projects like Mem0, Zep, LangMem, sqlite-memory, and Engram validate the category. `ginko` should not compete as a generic "memory layer" clone.
 
 The sharper niche is:
 
 > **Canonical local memory for coding agents and personal AI infrastructure.**
 
-See [Choosing Engram or llm-memory](docs/competitive-engram.md) for the closest direct comparison and the implementation practices we should borrow without losing this project's canonical-memory focus.
+See [Choosing Engram or Ginko](docs/competitive-engram.md) for the closest direct comparison and the implementation practices we should borrow without losing this project's canonical-memory focus.
 
 ## 5-minute quickstart
 
 ```bash
-git clone https://github.com/salemarsm/llm-memory.git
-cd llm-memory
+git clone https://github.com/salemarsm/ginko.git
+cd ginko
 
 make build
 
-bin/llm-memory init
-bin/llm-memory doctor
-bin/llm-memory ui
+bin/ginko init
+bin/ginko doctor
+bin/ginko ui
 ```
 
 Open:
@@ -212,7 +219,7 @@ User prompt
   ↓
 Agent calls /api/context or MCP memory_context
   ↓
-llm-memory retrieves compact relevant memories
+ginko retrieves compact relevant memories
   ↓
 Agent answers normally
   ↓
@@ -242,7 +249,7 @@ Document chunk:
 "In meeting notes, the team decided to use SQLite for local-first storage."
 
 Canonical memory:
-"The llm-memory project uses SQLite as the canonical local-first store."
+"The Ginko project uses SQLite as the canonical local-first store."
 
 Evidence:
 doc_id=..., chunk_id=...
@@ -384,9 +391,9 @@ The target UX is invisible memory:
 Generate MCP snippets:
 
 ```bash
-bin/llm-memory install-mcp claude-code
-bin/llm-memory install-mcp codex
-bin/llm-memory install-mcp openclaw
+bin/ginko install-mcp claude-code
+bin/ginko install-mcp codex
+bin/ginko install-mcp openclaw
 ```
 
 Details: [MCP integration](docs/mcp.md).
@@ -399,7 +406,7 @@ Details: [MCP integration](docs/mcp.md).
 └────────────┬─────────────┘
              │ MCP / HTTP / CLI
 ┌────────────▼─────────────┐
-│      llm-memory API       │
+│      Ginko API       │
 ├──────────────────────────┤
 │ Context builder           │
 │ Suggestion engine         │
@@ -498,8 +505,8 @@ Keep project-specific knowledge compartmentalized per tool, target, client, or e
 - [Memory model](docs/memory-model.md)
 - [HTTP API](docs/api.md)
 - [OpenAPI](docs/openapi.yaml)
-- [White paper](docs/whitepaper/llm-memory-whitepaper.pdf)
-- [White paper source](docs/whitepaper/llm-memory-whitepaper.tex)
+- [White paper](docs/whitepaper/ginko-whitepaper.pdf)
+- [White paper source](docs/whitepaper/ginko-whitepaper.tex)
 - [CLI](docs/cli.md)
 - [MCP](docs/mcp.md)
 - [Suggestion engine](docs/suggestion-engine.md)
@@ -518,11 +525,11 @@ MIT.
 
 ## Português
 
-`llm-memory` é uma camada local-first de memória canônica para agentes de IA, coding assistants, sistemas RAG e fluxos com LLM local/remota.
+`ginko` é uma camada local-first de memória canônica para agentes de IA, coding assistants, sistemas RAG e fluxos com LLM local/remota.
 
 Ele resolve um problema comum: agentes confundem histórico de chat, busca vetorial, chunks de documentos e memória durável.
 
-`llm-memory` separa essas camadas:
+`ginko` separa essas camadas:
 
 - **Memórias** são registros compactos, estruturados e auditáveis.
 - **Documentos e chunks** são evidência.
@@ -536,8 +543,8 @@ Ele resolve um problema comum: agentes confundem histórico de chat, busca vetor
 
 Para leitores que quiserem a fundamentação completa, leia o white paper:
 
-- [PDF do white paper](docs/whitepaper/llm-memory-whitepaper.pdf)
-- [Fonte LaTeX](docs/whitepaper/llm-memory-whitepaper.tex)
+- [PDF do white paper](docs/whitepaper/ginko-whitepaper.pdf)
+- [Fonte LaTeX](docs/whitepaper/ginko-whitepaper.tex)
 
 Ele detalha o modelo de memória canônica, a filosofia do schema SQLite, o pipeline de retrieval/contexto, os limites entre RAG e memória, governança/auditoria e por que embeddings são índices opcionais, não a fonte da verdade.
 
@@ -553,7 +560,7 @@ Vector DBs são índices úteis, mas são fontes ruins da verdade.
 
 Prompts não são bancos de dados. LLMs não são donas da memória. Logs de chat não são conhecimento durável.
 
-`llm-memory` separa:
+`ginko` separa:
 
 ```txt
 eventos brutos -> trilha de auditoria
@@ -574,19 +581,19 @@ SQLite         -> fonte da verdade
 | Histórico de chat | continuidade curta | sem schema durável, ruidoso, preso à janela de contexto |
 | Memória estilo LangChain | conveniência em app | frequentemente acoplada ao runtime/prompt |
 | SQLite puro | storage local durável | ainda falta modelo de memória e política de retrieval |
-| `llm-memory` | memória canônica durável para agentes | precisa integrar com o agente/runtime |
+| `ginko` | memória canônica durável para agentes | precisa integrar com o agente/runtime |
 
 ## Começo rápido
 
 ```bash
-git clone https://github.com/salemarsm/llm-memory.git
-cd llm-memory
+git clone https://github.com/salemarsm/ginko.git
+cd ginko
 
 make build
 
-bin/llm-memory init
-bin/llm-memory doctor
-bin/llm-memory ui
+bin/ginko init
+bin/ginko doctor
+bin/ginko ui
 ```
 
 Abra:
@@ -625,7 +632,7 @@ Chunk documental:
 "Nas notas da reunião, o time decidiu usar SQLite para storage local-first."
 
 Memória canônica:
-"O projeto llm-memory usa SQLite como store canônico local-first."
+"O projeto Ginko usa SQLite como store canônico local-first."
 ```
 
 ## Política de escrita
@@ -664,9 +671,9 @@ A UX desejada é invisível:
 Gerar snippets MCP:
 
 ```bash
-bin/llm-memory install-mcp claude-code
-bin/llm-memory install-mcp codex
-bin/llm-memory install-mcp openclaw
+bin/ginko install-mcp claude-code
+bin/ginko install-mcp codex
+bin/ginko install-mcp openclaw
 ```
 
 ## Segurança

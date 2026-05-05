@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/salemarsm/llm-memory/config"
+	"github.com/salemarsm/ginko/config"
 )
 
 func TestTokenCreateHelpDoesNotMutateConfig(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/salemarsm/llm-memory
+module github.com/salemarsm/ginko
 
 go 1.22
 

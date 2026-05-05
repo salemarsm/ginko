@@ -10,10 +10,10 @@
       "name": "ginko",
       "source": "./plugin/claude-code",
       "description": "Persistent memory for your Claude Code agent. Like ginkgo biloba — but it actually works.",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "category": "memory",
       "tags": ["memory", "mcp", "sqlite", "fts5", "canonical"],
-      "homepage": "https://github.com/salemarsm/llm-memory",
+      "homepage": "https://github.com/salemarsm/ginko",
       "license": "MIT"
     }
   ]

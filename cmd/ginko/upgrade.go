@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/salemarsm/llm-memory/internal/version"
+	"github.com/salemarsm/ginko/internal/version"
 )
 
-const upgradeRepo = "salemarsm/llm-memory"
+const upgradeRepo = "salemarsm/ginko"
 
 func doUpgrade(args []string) {
 	fmt.Println("Checking for updates...")

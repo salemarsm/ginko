@@ -167,7 +167,7 @@ func printPluginInstructions() {
 	fmt.Println(`Install ginko as a Claude Code plugin (recommended):
 
   # Inside a Claude Code session:
-  /plugin marketplace add salemarsm/llm-memory
+  /plugin marketplace add salemarsm/ginko
   /plugin install ginko
 
 The plugin includes:

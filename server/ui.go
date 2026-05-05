@@ -23,13 +23,13 @@ const indexHTML = `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>llm-memory</title>
+<title>ginko</title>
 <style>
 :root{color-scheme:dark;--bg:#0b0f14;--panel:#111821;--muted:#8ba0b3;--txt:#e6edf3;--line:#243244;--accent:#7ee787;--warn:#d29922;--bad:#ff7b72;--blue:#1f6feb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.45 system-ui,Segoe UI,Roboto,Arial}header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:center;justify-content:space-between}h1{font-size:18px;margin:0}.wrap{padding:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}.toolbar{display:grid;grid-template-columns:1.4fr repeat(4,minmax(120px,.4fr)) auto;gap:8px;align-items:end}label{display:block;margin:0 0 4px;color:var(--muted);font-size:12px}input,textarea,select{width:100%;background:#0d141c;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px}textarea{min-height:120px}button{background:var(--blue);color:white;border:0;border-radius:8px;padding:9px 12px;cursor:pointer}button.secondary{background:#30363d}button.danger{background:#9b2428}.row{display:flex;gap:8px}.row>*{flex:1}.muted{color:var(--muted)}.err{color:var(--bad)}.warn{color:var(--warn)}code{color:var(--accent)}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid var(--line);padding:8px 7px;text-align:left;vertical-align:top}th{color:var(--muted);font-size:12px;position:sticky;top:0;background:var(--panel);z-index:1}tbody tr:hover{background:#0d141c}.content{max-width:720px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tag{display:inline-block;color:#111;background:var(--accent);padding:1px 5px;border-radius:999px;margin-right:4px;font-size:11px}.pill{border:1px solid var(--line);border-radius:999px;padding:2px 7px;color:var(--muted)}dialog{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:14px;max-width:760px;width:92vw}dialog::backdrop{background:rgba(0,0,0,.55)}.actions{white-space:nowrap}.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{background:#0d141c;border:1px solid var(--line);border-radius:10px;padding:8px 10px}@media(max-width:950px){.toolbar{grid-template-columns:1fr 1fr}.content{white-space:normal}.hide-sm{display:none}}
 </style>
 </head>
 <body>
-<header><h1>☣️ llm-memory</h1><div class="muted" id="cfg">carregando config...</div></header>
+<header><h1>☣️ ginko</h1><div class="muted" id="cfg">carregando config...</div></header>
 <div class="wrap">
   <section class="card">
     <div class="toolbar">

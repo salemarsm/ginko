@@ -17,7 +17,7 @@ go build -o bin/memmcp ./cmd/memmcp
 
 ```json
 {
-  "command": "/path/to/llm-memory/bin/memmcp",
+  "command": "/path/to/ginko/bin/memmcp",
   "args": ["-db", "/path/to/memory.db"]
 }
 ```

@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/memory"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/memory"
 )
 
 
@@ -44,7 +44,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		got := strings.TrimSpace(r.Header.Get("Authorization"))
 		const prefix = "Bearer "
 		if !strings.HasPrefix(got, prefix) || subtle.ConstantTimeCompare([]byte(strings.TrimSpace(strings.TrimPrefix(got, prefix))), []byte(token)) != 1 {
-			w.Header().Set("WWW-Authenticate", `Bearer realm="llm-memory"`)
+			w.Header().Set("WWW-Authenticate", `Bearer realm="ginko"`)
 			writeErrorStatus(w, http.StatusUnauthorized, errors.New("missing or invalid bearer token"))
 			return
 		}
@@ -528,7 +528,7 @@ func (s *Server) handleBrowse(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) appendEvent(r *http.Request, e memory.Event) {
 	if err := s.store.AppendEvent(r.Context(), e); err != nil {
-		log.Printf("llm-memory: append %s event failed: %v", e.Kind, err)
+		log.Printf("ginko: append %s event failed: %v", e.Kind, err)
 	}
 }
 

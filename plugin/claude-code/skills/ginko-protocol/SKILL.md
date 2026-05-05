@@ -1,5 +1,5 @@
 ---
-description: Use this skill whenever working in a project that has a ginko (llm-memory) MCP server available — to recall prior context at the start of work, save durable memories after meaningful work, and supersede outdated memories. Trigger when the user mentions persistent memory, recall, decisions, preferences, or starts a task that may have prior context in this codebase.
+description: Use this skill whenever working in a project that has a ginko (ginko) MCP server available — to recall prior context at the start of work, save durable memories after meaningful work, and supersede outdated memories. Trigger when the user mentions persistent memory, recall, decisions, preferences, or starts a task that may have prior context in this codebase.
 ---
 
 # Ginko Memory Protocol

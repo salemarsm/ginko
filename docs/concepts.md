@@ -1,6 +1,6 @@
 # Concepts
 
-`llm-memory` is built around one distinction:
+`ginko` is built around one distinction:
 
 > RAG is evidence. Memory is conclusion.
 

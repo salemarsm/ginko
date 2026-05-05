@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/salemarsm/llm-memory/config"
+	"github.com/salemarsm/ginko/config"
 )
 
 type agentSetup struct {

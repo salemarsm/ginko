@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/salemarsm/llm-memory/memory"
+	"github.com/salemarsm/ginko/memory"
 )
 
 func openTestStore(t *testing.T) *memory.Store {

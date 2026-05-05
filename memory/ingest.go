@@ -275,7 +275,7 @@ func (s *Store) ingestDoclingFile(ctx context.Context, runID, path string) (Docu
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	tmp, err := os.MkdirTemp("", "llm-memory-docling-*")
+	tmp, err := os.MkdirTemp("", "ginko-docling-*")
 	if err != nil {
 		return Document{}, nil, err
 	}

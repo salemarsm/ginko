@@ -7,14 +7,14 @@ Persistent memory for your Claude Code agent. Bundles the `ginko` MCP server, th
 Inside a Claude Code session:
 
 ```
-/plugin marketplace add salemarsm/llm-memory
+/plugin marketplace add salemarsm/ginko
 /plugin install ginko
 ```
 
 Or, locally from a checkout:
 
 ```
-/plugin marketplace add /absolute/path/to/llm-memory
+/plugin marketplace add /absolute/path/to/ginko
 /plugin install ginko
 ```
 
@@ -25,10 +25,10 @@ After install, restart the session so the MCP server and hooks load.
 The `ginko` binary must be on your PATH. Install it from source:
 
 ```bash
-go install github.com/salemarsm/llm-memory/cmd/ginko@latest
+go install github.com/salemarsm/ginko/cmd/ginko@latest
 ```
 
-Or grab a release binary from https://github.com/salemarsm/llm-memory/releases.
+Or grab a release binary from https://github.com/salemarsm/ginko/releases.
 
 If `ginko` is not on PATH, the hooks fail silently (non-blocking) and the MCP server cannot start.
 
@@ -64,7 +64,7 @@ This removes the plugin from your Claude Code config but leaves your memory data
 
 ## Project home
 
-https://github.com/salemarsm/llm-memory
+https://github.com/salemarsm/ginko
 
 ## License
 

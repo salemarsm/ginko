@@ -1,8 +1,8 @@
-# Choosing Engram or llm-memory
+# Choosing Engram or Ginko
 
-Engram is the closest known peer to `llm-memory`: Go, SQLite, FTS5, MCP, HTTP API, CLI/TUI, and a strong focus on coding-agent memory.
+Engram is the closest known peer to `ginko`: Go, SQLite, FTS5, MCP, HTTP API, CLI/TUI, and a strong focus on coding-agent memory.
 
-This document is not a takedown. Engram is a solid project and may be the better choice for many coding-agent workflows. The goal here is to clarify overlap, learn from good product decisions, and keep `llm-memory` focused on its own niche: canonical, auditable memory with evidence and lifecycle semantics.
+This document is not a takedown. Engram is a solid project and may be the better choice for many coding-agent workflows. The goal here is to clarify overlap, learn from good product decisions, and keep `ginko` focused on its own niche: canonical, auditable memory with evidence and lifecycle semantics.
 
 ## Quick guidance
 
@@ -15,7 +15,7 @@ Choose **Engram** when you mainly want:
 - optional sync/cloud replication paths,
 - a single polished tool for day-to-day agent memory.
 
-Choose **llm-memory** when you mainly want:
+Choose **ginko** when you mainly want:
 
 - a local-first canonical memory database,
 - explicit separation between memory, evidence, events, chunks, and embeddings,
@@ -24,7 +24,7 @@ Choose **llm-memory** when you mainly want:
 - personal AI infrastructure beyond coding-agent sessions,
 - RAG where documents/chunks are evidence and memories are conclusions.
 
-They can also be complementary: Engram can serve as a coding-agent memory layer, while `llm-memory` can serve as a more canonical long-term memory/evidence store.
+They can also be complementary: Engram can serve as a coding-agent memory layer, while `ginko` can serve as a more canonical long-term memory/evidence store.
 
 ## Where they overlap
 
@@ -38,11 +38,11 @@ Both projects care about:
 - coding-agent workflows,
 - avoiding a mandatory external vector database.
 
-This overlap validates the category. It also means `llm-memory` should avoid positioning itself as just another coding-agent memory tool.
+This overlap validates the category. It also means `ginko` should avoid positioning itself as just another coding-agent memory tool.
 
 ## Product differences
 
-| Dimension | Engram | llm-memory |
+| Dimension | Engram | ginko |
 | --- | --- | --- |
 | Primary lens | Persistent memory for coding agents | Canonical operational memory for agents/personal AI |
 | Stored unit | Observations/session memory | Canonical memories, events, documents, chunks |
@@ -65,7 +65,7 @@ Adopt:
 - `go install` as the transparent technical-user path,
 - Homebrew-ready packaging later.
 
-`llm-memory` framing:
+`ginko` framing:
 
 > One local canonical memory database. SQLite source of truth. HTTP/MCP/CLI over the same lifecycle model.
 
@@ -75,12 +75,12 @@ Engram treats per-agent setup as first-class: setup commands, docs, compaction s
 
 Adopt:
 
-- `llm-memory setup <agent>` or `llm-memory integrate <agent>` for OpenClaw, Claude Code, Codex-like CLI, and generic MCP,
+- `ginko setup <agent>` or `ginko integrate <agent>` for OpenClaw, Claude Code, Codex-like CLI, and generic MCP,
 - manual JSON examples as fallback,
 - bootstrap prompts that encode memory policy,
 - smoke tests for generated config snippets.
 
-`llm-memory` setup should emphasize transparent canonical flow:
+`ginko` setup should emphasize transparent canonical flow:
 
 1. retrieve compact context before answering,
 2. suggest durable memories after meaningful work,
@@ -114,7 +114,7 @@ Adopt/adapt:
 - visible soft-delete semantics,
 - helper for canonical topic-key suggestions.
 
-Keep the `llm-memory` distinction: these should support canonical memory lifecycle, not replace it with a mutable observation log.
+Keep the `ginko` distinction: these should support canonical memory lifecycle, not replace it with a mutable observation log.
 
 ### 5. Identity ambiguity should fail loudly
 
@@ -124,10 +124,10 @@ Adopt:
 
 - project/subject detection helpers for integrations,
 - structured ambiguity errors,
-- repo-local config such as `.llm-memory/config.json`,
+- repo-local config such as `.ginko/config.json`,
 - consolidation tools for similar project/subject names.
 
-For `llm-memory`, this should generalize beyond code repositories: subject identity should be explicit, validated, and auditable.
+For `ginko`, this should generalize beyond code repositories: subject identity should be explicit, validated, and auditable.
 
 ### 6. Doctor/repair should be real workflows
 
@@ -151,7 +151,7 @@ Adopt:
 - first-class relations for conflict/supersession/reinforcement,
 - auditable judge metadata: actor/model, reason, evidence, confidence.
 
-For `llm-memory`, conflict handling should govern canonical memory writes, not just warn during search.
+For `ginko`, conflict handling should govern canonical memory writes, not just warn during search.
 
 ### 8. Sync should remain local-first
 
@@ -164,7 +164,7 @@ Adopt later:
 - export chunks or migration-safe bundles instead of raw DB sync,
 - conflict handling before multi-writer sync.
 
-## What llm-memory should avoid
+## What ginko should avoid
 
 - Becoming only a coding-agent observation tracker.
 - Expanding MCP tools faster than the memory lifecycle stabilizes.
@@ -173,13 +173,13 @@ Adopt later:
 
 ## Recommended positioning
 
-> `llm-memory` is a local-first canonical memory database for AI agents: SQLite source of truth, HTTP/MCP interface, auditable lifecycle, token-budgeted context, and evidence-aware RAG bridge.
+> `ginko` is a local-first canonical memory database for AI agents: SQLite source of truth, HTTP/MCP interface, auditable lifecycle, token-budgeted context, and evidence-aware RAG bridge.
 
 Useful shorthand:
 
 ```txt
 Engram      = strong coding-agent memory and session workflow
-llm-memory  = canonical operational memory with evidence, audit, supersession, and agent-agnostic retrieval
+ginko  = canonical operational memory with evidence, audit, supersession, and agent-agnostic retrieval
 ```
 
 Core differentiators to keep visible:

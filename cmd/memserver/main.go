@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/internal/version"
-	"github.com/salemarsm/llm-memory/memory"
-	"github.com/salemarsm/llm-memory/server"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/internal/version"
+	"github.com/salemarsm/ginko/memory"
+	"github.com/salemarsm/ginko/server"
 )
 
 func main() {
@@ -53,7 +53,7 @@ func main() {
 	defer store.Close()
 
 	_, hasAuth := cfg.Server.BearerToken()
-	slog.Info("llm-memory starting",
+	slog.Info("ginko starting",
 		"version", version.Version,
 		"addr", cfg.Server.Addr,
 		"database", cfg.Database.Path,

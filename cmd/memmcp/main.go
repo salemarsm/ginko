@@ -9,9 +9,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/internal/version"
-	"github.com/salemarsm/llm-memory/memory"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/internal/version"
+	"github.com/salemarsm/ginko/memory"
 )
 
 type rpcRequest struct {
@@ -45,7 +45,7 @@ type mcpServer struct {
 }
 
 func main() {
-	db := flag.String("db", envDefault("LLM_MEMORY_DB", "./memory.db"), "SQLite database path")
+	db := flag.String("db", envDefault("GINKO_DB", "./memory.db"), "SQLite database path")
 	agentName := flag.String("agent", envDefault("GINKO_AGENT", "claude-code"), "agent name for profile lookup")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
@@ -106,7 +106,7 @@ func (s *mcpServer) handle(req rpcRequest) rpcResponse {
 	case "initialize":
 		resp.Result = map[string]any{
 			"protocolVersion": "2024-11-05",
-			"serverInfo":      map[string]any{"name": "llm-memory", "version": version.Version},
+			"serverInfo":      map[string]any{"name": "ginko", "version": version.Version},
 			"capabilities":    map[string]any{"tools": map[string]any{}},
 		}
 	case "tools/list":

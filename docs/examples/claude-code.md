@@ -1,17 +1,17 @@
 # Claude Code setup
 
-Ginko is the Claude Code-facing plugin/setup name for `llm-memory`.
+Ginko is the Claude Code-facing plugin/setup name for `ginko`.
 
 Dry-run first:
 
 ```bash
-bin/llm-memory setup claude-code --dry-run
+bin/ginko setup claude-code --dry-run
 ```
 
 Apply:
 
 ```bash
-bin/llm-memory setup claude-code
+bin/ginko setup claude-code
 ```
 
 What it does:
@@ -24,7 +24,7 @@ What it does:
 Legacy snippet-only flow remains available:
 
 ```bash
-bin/llm-memory install-mcp claude-code
+bin/ginko install-mcp claude-code
 ```
 
 See `plugin/claude-code/` for the Ginko plugin skeleton: MCP declaration, hooks, skill, and slash-command prompts.

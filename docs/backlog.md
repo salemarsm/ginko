@@ -1,6 +1,6 @@
 # Backlog
 
-Prioritized backlog for `llm-memory`.
+Prioritized backlog for `ginko`.
 
 Legend:
 
@@ -91,7 +91,7 @@ Acceptance:
 
 ### AGENT-001 — One-command agent setup skeleton
 
-- Add `llm-memory setup <agent>` or `llm-memory integrate <agent>`. [started: `setup claude-code`]
+- Add `ginko setup <agent>` or `ginko integrate <agent>`. [started: `setup claude-code`]
 - Start with dry-run output for `openclaw`, `claude-code`, `codex`, and `generic-mcp`. [started: Claude Code]
 - Include exact manual config snippets. [started: Ginko MCP server merge]
 - Refuse unsafe config writes unless explicitly confirmed. [started: dry-run + backup before write]
@@ -103,7 +103,7 @@ Acceptance:
 ### AGENT-002 — Project/subject identity detection
 
 - Add helper command/API for current project/subject resolution.
-- Support repo-local `.llm-memory/config.json` for canonical project identity.
+- Support repo-local `.ginko/config.json` for canonical project identity.
 - Return structured ambiguity errors instead of guessing.
 - Add later consolidation command for similar project names/subjects.
 
@@ -460,7 +460,7 @@ Acceptance:
 - [x] Add SQLite-backed sessions table.
 - [x] Add `memory_session_start`, `memory_session_end`, `memory_session_summary` MCP tools.
 - [x] Include current/latest session context in `memory_context` when project is known.
-- [x] Auto-detect project from `.llm-memory/config.json`, git remote, then directory basename.
+- [x] Auto-detect project from `.ginko/config.json`, git remote, then directory basename.
 - [ ] Add variant detection warnings for similar project names.
 - [ ] Add ergonomic CLI wrappers for session lifecycle.
 

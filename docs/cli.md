@@ -1,16 +1,16 @@
 # CLI
 
-## llm-memory
+## Ginko
 
 ```bash
-bin/llm-memory init
-bin/llm-memory doctor
-bin/llm-memory paths
-bin/llm-memory mcp-config
-bin/llm-memory install-mcp claude-code
-bin/llm-memory install-mcp codex
-bin/llm-memory install-mcp openclaw
-bin/llm-memory ui
+bin/ginko init
+bin/ginko doctor
+bin/ginko paths
+bin/ginko mcp-config
+bin/ginko install-mcp claude-code
+bin/ginko install-mcp codex
+bin/ginko install-mcp openclaw
+bin/ginko ui
 ```
 
 ## memctl
@@ -25,10 +25,10 @@ bin/memctl -subject botmaster suggest "I prefer Go examples."
 ## Auth tokens
 
 ```sh
-bin/llm-memory token create   # prints and stores a local bearer token
-bin/llm-memory token list     # shows whether auth is configured; never prints secrets
-bin/llm-memory token revoke   # clears token config
+bin/ginko token create   # prints and stores a local bearer token
+bin/ginko token list     # shows whether auth is configured; never prints secrets
+bin/ginko token revoke   # clears token config
 
-LLM_MEMORY_API_TOKEN=<token> bin/memctl search "query"
+GINKO_API_TOKEN=<token> bin/memctl search "query"
 bin/memctl -token <token> search "query"
 ```

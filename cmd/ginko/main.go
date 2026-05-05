@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/internal/version"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/internal/version"
 )
 
 const usage = `ginko — persistent memory for your Claude Code agent
@@ -18,9 +18,13 @@ Usage:
   ginko <command> [arguments]
 
 Commands:
+  init          Initialize Ginko config and database path
+  doctor        Diagnostic checks
+  token         Manage API tokens
+  ui            Start local web UI/API server
   mcp           Start MCP server (stdio)
   serve         Start HTTP API server
-  setup         Configure an agent's MCP config (claude-code)
+  setup         Configure an agent's MCP config (claude-code, openclaw, all)
   upgrade       Upgrade ginko to the latest release
   integrate     Add ginko to an agent workflow (claude-code, openclaw, codex)
   save          Save a memory
@@ -28,32 +32,44 @@ Commands:
   context       Recent context for a subject
   stats         Memory statistics
   ingest        Ingest a file or directory
-  doctor        Diagnostic checks
+  paths         Print config/database paths
   version       Print version
   help          Print this help
 
 Run 'ginko help <command>' for command-specific help.
 
-Project: github.com/salemarsm/llm-memory
+Project: github.com/salemarsm/ginko
 `
 
 var dispatch = map[string]string{
-	"mcp":     "memmcp",
-	"serve":   "memserver",
-	"save":    "memctl",
-	"search":  "memctl",
-	"context": "memctl",
-	"stats":   "memctl",
-	"ingest":  "memctl",
-	"doctor":  "llm-memory",
+	"init":        "ginko-admin",
+	"doctor":      "ginko-admin",
+	"token":       "ginko-admin",
+	"ui":          "ginko-admin",
+	"paths":       "ginko-admin",
+	"mcp-config":  "ginko-admin",
+	"install-mcp": "ginko-admin",
+	"mcp":         "memmcp",
+	"serve":       "memserver",
+	"save":        "memctl",
+	"search":      "memctl",
+	"context":     "memctl",
+	"stats":       "memctl",
+	"ingest":      "memctl",
 }
 
 var passthroughVerb = map[string]bool{
-	"search":  true,
-	"context": true,
-	"stats":   true,
-	"ingest":  true,
-	"doctor":  true,
+	"init":        true,
+	"doctor":      true,
+	"token":       true,
+	"ui":          true,
+	"paths":       true,
+	"mcp-config":  true,
+	"install-mcp": true,
+	"search":      true,
+	"context":     true,
+	"stats":       true,
+	"ingest":      true,
 }
 
 func main() {

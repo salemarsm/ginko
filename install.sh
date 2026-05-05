@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Install ginko from GitHub Releases.
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/salemarsm/llm-memory/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/salemarsm/ginko/main/install.sh | bash
 #   GINKO_VERSION=v0.2.1 bash install.sh
 #   GINKO_INSTALL_DIR=/usr/local/bin bash install.sh
 
 set -euo pipefail
 
-REPO="salemarsm/llm-memory"
+REPO="salemarsm/ginko"
 INSTALL_DIR="${GINKO_INSTALL_DIR:-$HOME/.local/bin}"
 VERSION="${GINKO_VERSION:-}"
 
@@ -55,7 +55,7 @@ tar -xzf "$TMP/ginko.tar.gz" -C "$TMP"
 # --- Install binaries ---
 mkdir -p "$INSTALL_DIR"
 installed=()
-for bin in ginko llm-memory memctl memmcp memserver; do
+for bin in ginko ginko-admin memctl memmcp memserver; do
   if [ -f "$TMP/$bin" ]; then
     install -m 755 "$TMP/$bin" "$INSTALL_DIR/$bin"
     installed+=("$bin")

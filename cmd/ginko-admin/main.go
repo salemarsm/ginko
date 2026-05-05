@@ -14,8 +14,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/internal/version"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/internal/version"
+	"github.com/salemarsm/ginko/memory"
 )
 
 const defaultDirName = ".ginko"
@@ -24,7 +25,7 @@ func main() {
 	_ = config.MaybeMigrateLegacyDataDir()
 	home, _ := os.UserHomeDir()
 	defaultHome := filepath.Join(home, defaultDirName)
-	homeDir := flag.String("home", envDefault("LLM_MEMORY_HOME", defaultHome), "llm-memory home directory")
+	homeDir := flag.String("home", envDefault("GINKO_HOME", defaultHome), "ginko home directory")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -44,7 +45,7 @@ func main() {
 	case "setup":
 		must(setupCommand(*homeDir, args))
 	case "version":
-		fmt.Println("llm-memory", version.String())
+		fmt.Println("ginko", version.String())
 	case "paths":
 		printPaths(*homeDir)
 	case "mcp-config":
@@ -67,13 +68,26 @@ func initProject(home string) error {
 		return err
 	}
 	cfgPath := configPath(home)
+	cfg := config.Default()
+	cfg.Database.Path = dbPath(home)
 	if _, err := os.Stat(cfgPath); errors.Is(err, os.ErrNotExist) {
-		cfg := config.Default()
-		cfg.Database.Path = dbPath(home)
 		b, _ := json.MarshalIndent(cfg, "", "  ")
 		if err := os.WriteFile(cfgPath, append(b, '\n'), 0o644); err != nil {
 			return err
 		}
+	} else if err == nil {
+		loaded, loadErr := config.Load(cfgPath)
+		if loadErr != nil {
+			return loadErr
+		}
+		cfg = loaded
+	}
+	store, err := memory.Open(cfg.Database.Path)
+	if err != nil {
+		return err
+	}
+	if err := store.Close(); err != nil {
+		return err
 	}
 	fmt.Println("✓ initialized", home)
 	fmt.Println("config:", cfgPath)
@@ -82,7 +96,7 @@ func initProject(home string) error {
 }
 
 func doctor(home string) error {
-	fmt.Printf("llm-memory doctor  (version %s)\n", version.Version)
+	fmt.Printf("ginko doctor  (version %s)\n", version.Version)
 	fmt.Println("home:", home)
 	errors := 0
 	warn := 0
@@ -108,16 +122,16 @@ func doctor(home string) error {
 	// --- directories and config ---
 	_, homeErr := os.Stat(home)
 	check(homeErr == nil, "home dir: "+home,
-		"home dir missing: "+home+"\n  fix: llm-memory init")
+		"home dir missing: "+home+"\n  fix: ginko init")
 
 	cfgPath := configPath(home)
 	_, cfgErr := os.Stat(cfgPath)
 	check(cfgErr == nil, "config: "+cfgPath,
-		"config missing: "+cfgPath+"\n  fix: llm-memory init")
+		"config missing: "+cfgPath+"\n  fix: ginko init")
 
 	cfg, loadErr := config.Load(cfgPath)
 	check(loadErr == nil, "config valid",
-		"config invalid: "+fmt.Sprint(loadErr)+"\n  fix: edit "+cfgPath+" or run llm-memory init")
+		"config invalid: "+fmt.Sprint(loadErr)+"\n  fix: edit "+cfgPath+" or run ginko init")
 	if loadErr != nil {
 		cfg = config.Default()
 	}
@@ -273,7 +287,7 @@ func tokenCommand(home string, args []string) error {
 }
 
 func printTokenUsage() {
-	fmt.Fprintln(os.Stderr, `llm-memory token <subcommand>
+	fmt.Fprintln(os.Stderr, `ginko token <subcommand>
 
 Subcommands:
   create    generate and store a local bearer token in server.auth_token
@@ -281,24 +295,24 @@ Subcommands:
   revoke    clear server.auth_token and server.auth_token_env
 
 Examples:
-  llm-memory token create
-  llm-memory token list
-  llm-memory token revoke`)
+  ginko token create
+  ginko token list
+  ginko token revoke`)
 }
 
 func printTokenSubcommandUsage(subcmd string) {
 	switch subcmd {
 	case "create":
-		fmt.Fprintln(os.Stderr, `llm-memory token create
+		fmt.Fprintln(os.Stderr, `ginko token create
 
 Generate a cryptographically random bearer token and store it in server.auth_token.
 The token is printed once on stdout. This command mutates ~/.ginko/config.json unless -home is supplied.`)
 	case "list":
-		fmt.Fprintln(os.Stderr, `llm-memory token list
+		fmt.Fprintln(os.Stderr, `ginko token list
 
 Show whether server.auth_token or server.auth_token_env is configured. Secret token values are not printed.`)
 	case "revoke":
-		fmt.Fprintln(os.Stderr, `llm-memory token revoke
+		fmt.Fprintln(os.Stderr, `ginko token revoke
 
 Clear server.auth_token and server.auth_token_env from config.`)
 	default:
@@ -366,7 +380,7 @@ func setupCommand(home string, args []string) error {
 }
 
 func printSetupUsage() {
-	fmt.Fprintln(os.Stderr, `llm-memory setup <target> [flags]
+	fmt.Fprintln(os.Stderr, `ginko setup <target> [flags]
 
 Targets:
   claude-code    configure Claude Code MCP server
@@ -377,8 +391,8 @@ Flags for claude-code:
   --config PATH  explicit Claude Code settings.json path
 
 Examples:
-  llm-memory setup claude-code --dry-run
-  llm-memory setup claude-code --local`)
+  ginko setup claude-code --dry-run
+  ginko setup claude-code --local`)
 }
 
 func setupClaudeCode(home string, dryRun, local bool, explicitPath string) error {
@@ -546,7 +560,7 @@ func findSibling(name string) (string, error) {
 	if p, err := exec.LookPath(name); err == nil {
 		return p, nil
 	}
-	return "", fmt.Errorf("%s not found next to llm-memory or in PATH", name)
+	return "", fmt.Errorf("%s not found next to ginko or in PATH", name)
 }
 
 func exeName(name string) string {
@@ -598,7 +612,7 @@ func must(err error) {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `llm-memory [flags] <command>
+	fmt.Fprintln(os.Stderr, `ginko [flags] <command>
 
 Commands:
   init                    create ~/.ginko/config.json and database path
@@ -612,5 +626,5 @@ Commands:
   ui                      run memserver with local config
 
 Flags:
-  -home DIR               default ~/.ginko or LLM_MEMORY_HOME`)
+  -home DIR               default ~/.ginko or GINKO_HOME`)
 }

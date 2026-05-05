@@ -1,21 +1,23 @@
 # OpenClaw integration
 
-OpenClaw is an MCP-native agent. Connect ginko the same way as Claude Code.
+OpenClaw is an MCP-native agent. Connect Ginko as an OpenClaw MCP server.
 
 ## Setup
 
 ```bash
-ginko setup claude-code   # writes ~/.claude/settings.json
+ginko setup openclaw   # writes ~/.openclaw/openclaw.json
 ```
 
 Or add manually to your OpenClaw MCP config:
 
 ```json
 {
-  "mcpServers": {
-    "ginko": {
-      "command": "ginko",
-      "args": ["mcp"]
+  "mcp": {
+    "servers": {
+      "ginko": {
+        "command": "ginko",
+        "args": ["mcp"]
+      }
     }
   }
 }
@@ -38,7 +40,7 @@ Or add manually to your OpenClaw MCP config:
 Add to your OpenClaw system prompt or `AGENT.md`:
 
 ```
-You have persistent memory through the ginko MCP server.
+You have persistent memory through the Ginko MCP server.
 
 At the start of each session:
   Call memory_context(query="<current task>", subject="<project>") to load prior context.

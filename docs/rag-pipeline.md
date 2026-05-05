@@ -31,7 +31,7 @@ In meeting notes, the team decided to use SQLite for local-first storage.
 Canonical memory:
 
 ```txt
-The llm-memory project uses SQLite as the canonical local-first store.
+The Ginko project uses SQLite as the canonical local-first store.
 ```
 
 Evidence link:

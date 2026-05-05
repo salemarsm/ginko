@@ -51,7 +51,7 @@ func (s *Store) BuildContext(ctx context.Context, req ContextRequest) (ContextRe
 	var sessionBlock string
 	if project != "" {
 		if _, err := s.EnsureActiveSession(ctx, project); err != nil {
-			log.Printf("llm-memory: ensure active session failed: %v", err)
+			log.Printf("ginko: ensure active session failed: %v", err)
 		}
 		sessionBlock = s.contextSessionBlock(ctx, project)
 	}
@@ -132,7 +132,7 @@ func (s *Store) BuildContext(ctx context.Context, req ContextRequest) (ContextRe
 			"truncated":        truncated,
 		})
 		if err := s.AppendEvent(ctx, Event{Kind: "context.built", Payload: string(payload), Source: Source{Kind: "retrieval", Ref: "BuildContext"}, CreatedAt: time.Now().UTC()}); err != nil {
-			log.Printf("llm-memory: append context.built event failed: %v", err)
+			log.Printf("ginko: append context.built event failed: %v", err)
 		}
 	}
 

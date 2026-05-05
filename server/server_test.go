@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/memory"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/memory"
 )
 
 func TestAPIAndGUI(t *testing.T) {
@@ -88,7 +88,7 @@ func TestAPIAndGUI(t *testing.T) {
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "<title>llm-memory</title>") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "<title>ginko</title>") {
 		t.Fatalf("GET / status=%d body=%s", rec.Code, rec.Body.String())
 	}
 }

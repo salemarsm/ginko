@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: llm-memory API
+  title: Ginko API
   version: 0.1.0
   description: Local-first canonical memory API for AI agents. Endpoints are available under /api and /api/v1 during v0.x; prefer /api/v1 for new integrations.
 servers:

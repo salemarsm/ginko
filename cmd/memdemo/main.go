@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/memory"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/memory"
 )
 
 func main() {

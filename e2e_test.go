@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/salemarsm/llm-memory/config"
-	"github.com/salemarsm/llm-memory/memory"
-	"github.com/salemarsm/llm-memory/server"
+	"github.com/salemarsm/ginko/config"
+	"github.com/salemarsm/ginko/memory"
+	"github.com/salemarsm/ginko/server"
 )
 
 // TestE2EMemoryLifecycle is the "aha moment" test:

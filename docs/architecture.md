@@ -6,7 +6,7 @@
 └────────────┬─────────────┘
              │ MCP / HTTP / CLI
 ┌────────────▼─────────────┐
-│      llm-memory API       │
+│      Ginko API       │
 ├──────────────────────────┤
 │ Context builder           │
 │ Suggestion engine         │
@@ -28,7 +28,7 @@ User prompt
   ↓
 Agent calls memory_context
   ↓
-llm-memory returns compact relevant memories
+ginko returns compact relevant memories
   ↓
 Agent answers
   ↓

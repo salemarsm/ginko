@@ -1,7 +1,7 @@
 {
   "server": {
     "addr": "127.0.0.1:8787",
-    "auth_token_env": "LLM_MEMORY_API_TOKEN"
+    "auth_token_env": "GINKO_API_TOKEN"
   },
   "database": {
     "path": "./memory.db"

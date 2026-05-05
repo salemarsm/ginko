@@ -130,11 +130,11 @@ func TestSearchRankedIncludesLexicalScore(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	_, err = s.UpsertMemory(ctx, Memory{Type: TypeDecision, Subject: "llm-memory", Content: "Endpoint /api/v1/context returns compact memory context.", Source: Source{Kind: "test", Ref: "rank"}, Scope: ScopeProject, Confidence: 0.91})
+	_, err = s.UpsertMemory(ctx, Memory{Type: TypeDecision, Subject: "ginko", Content: "Endpoint /api/v1/context returns compact memory context.", Source: Source{Kind: "test", Ref: "rank"}, Scope: ScopeProject, Confidence: 0.91})
 	if err != nil {
 		t.Fatal(err)
 	}
-	rows, err := s.SearchRanked(ctx, Query{Text: "/api/v1/context", Subject: "llm-memory", Limit: 5})
+	rows, err := s.SearchRanked(ctx, Query{Text: "/api/v1/context", Subject: "ginko", Limit: 5})
 	if err != nil {
 		t.Fatal(err)
 	}

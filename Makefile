@@ -6,18 +6,18 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -s -w \
-	-X github.com/salemarsm/llm-memory/internal/version.Version=$(VERSION) \
-	-X github.com/salemarsm/llm-memory/internal/version.Commit=$(COMMIT) \
-	-X github.com/salemarsm/llm-memory/internal/version.Date=$(DATE)
+	-X github.com/salemarsm/ginko/internal/version.Version=$(VERSION) \
+	-X github.com/salemarsm/ginko/internal/version.Commit=$(COMMIT) \
+	-X github.com/salemarsm/ginko/internal/version.Date=$(DATE)
 
-COMMANDS := ginko llm-memory memctl memmcp memserver
+COMMANDS := ginko ginko-admin memctl memmcp memserver
 
 all: check
 
 build:
 	@mkdir -p $(BIN_DIR)
 	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/ginko ./cmd/ginko
-	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/llm-memory ./cmd/llm-memory
+	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/ginko-admin ./cmd/ginko-admin
 	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/memctl ./cmd/memctl
 	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/memmcp ./cmd/memmcp
 	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/memserver ./cmd/memserver
@@ -34,7 +34,7 @@ e2e:
 
 install:
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/ginko
-	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/llm-memory
+	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/ginko-admin
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/memctl
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/memmcp
 	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/memserver

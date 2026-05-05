@@ -148,7 +148,7 @@ func TestSuggestMemoriesFromDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := s.SuggestMemoriesFromDocument(ctx, ChunkSuggestRequest{DocumentID: ingested.Documents[0].ID, Subject: "llm-memory", Scope: ScopeProject, Limit: 5})
+	resp, err := s.SuggestMemoriesFromDocument(ctx, ChunkSuggestRequest{DocumentID: ingested.Documents[0].ID, Subject: "ginko", Scope: ScopeProject, Limit: 5})
 	if err != nil {
 		t.Fatal(err)
 	}

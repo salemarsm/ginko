@@ -1,6 +1,6 @@
 version: 2
 
-project_name: llm-memory
+project_name: ginko
 
 before:
   hooks:
@@ -15,16 +15,16 @@ builds:
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
-  - id: llm-memory
-    main: ./cmd/llm-memory
-    binary: llm-memory
+      - -s -w -X github.com/salemarsm/ginko/internal/version.Version={{.Version}} -X github.com/salemarsm/ginko/internal/version.Commit={{.Commit}} -X github.com/salemarsm/ginko/internal/version.Date={{.Date}}
+  - id: ginko-admin
+    main: ./cmd/ginko-admin
+    binary: ginko-admin
     env:
       - CGO_ENABLED=0
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+      - -s -w -X github.com/salemarsm/ginko/internal/version.Version={{.Version}} -X github.com/salemarsm/ginko/internal/version.Commit={{.Commit}} -X github.com/salemarsm/ginko/internal/version.Date={{.Date}}
   - id: memctl
     main: ./cmd/memctl
     binary: memctl
@@ -33,7 +33,7 @@ builds:
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+      - -s -w -X github.com/salemarsm/ginko/internal/version.Version={{.Version}} -X github.com/salemarsm/ginko/internal/version.Commit={{.Commit}} -X github.com/salemarsm/ginko/internal/version.Date={{.Date}}
   - id: memmcp
     main: ./cmd/memmcp
     binary: memmcp
@@ -42,7 +42,7 @@ builds:
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+      - -s -w -X github.com/salemarsm/ginko/internal/version.Version={{.Version}} -X github.com/salemarsm/ginko/internal/version.Commit={{.Commit}} -X github.com/salemarsm/ginko/internal/version.Date={{.Date}}
   - id: memserver
     main: ./cmd/memserver
     binary: memserver
@@ -51,13 +51,13 @@ builds:
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X github.com/salemarsm/llm-memory/internal/version.Version={{.Version}} -X github.com/salemarsm/llm-memory/internal/version.Commit={{.Commit}} -X github.com/salemarsm/llm-memory/internal/version.Date={{.Date}}
+      - -s -w -X github.com/salemarsm/ginko/internal/version.Version={{.Version}} -X github.com/salemarsm/ginko/internal/version.Commit={{.Commit}} -X github.com/salemarsm/ginko/internal/version.Date={{.Date}}
 
 archives:
   - id: ginko-bundle
     builds:
       - ginko
-      - llm-memory
+      - ginko-admin
       - memctl
       - memmcp
       - memserver
@@ -69,7 +69,8 @@ archives:
     files:
       - LICENSE
       - README.md
-      - docs/whitepaper/llm-memory-whitepaper.pdf
+      - docs/whitepaper/ginko-whitepaper.pdf
+      - docs/assets/ginko-brand.jpg
 
 checksum:
   name_template: checksums.txt

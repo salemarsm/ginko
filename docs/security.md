@@ -19,7 +19,7 @@ Prefer an environment variable instead of putting secrets in config:
 {
   "server": {
     "addr": "0.0.0.0:8787",
-    "auth_token_env": "LLM_MEMORY_API_TOKEN"
+    "auth_token_env": "GINKO_API_TOKEN"
   }
 }
 ```

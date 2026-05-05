@@ -96,7 +96,7 @@ Sessions add narrative continuity for coding agents. They are project-scoped and
 - `POST /api/sessions/summary` with `{ "project": "my-project" }` returns the active session or latest closed session.
 - `POST /api/context` accepts optional `project`; when present it auto-starts an active session and includes the latest closed session summary within the token budget.
 
-MCP exposes the same primitives as `memory_session_start`, `memory_session_end`, and `memory_session_summary`. In `memmcp`, omitted project/subject fields default to auto-detected project identity from `.llm-memory/config.json`, git remote, or directory basename.
+MCP exposes the same primitives as `memory_session_start`, `memory_session_end`, and `memory_session_summary`. In `memmcp`, omitted project/subject fields default to auto-detected project identity from `.ginko/config.json`, git remote, or directory basename.
 
 ## Privacy tags
 
