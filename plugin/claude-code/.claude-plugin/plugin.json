@@ -1,7 +1,8 @@
 {
   "name": "ginko",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Persistent memory for your Claude Code agent. Like ginkgo biloba — but it actually works. Backed by SQLite, FTS5, and an auditable canonical memory store.",
+  "hooks": {},
   "author": {
     "name": "Rafael Salem",
     "url": "https://github.com/salemarsm"
