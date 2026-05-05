@@ -143,6 +143,11 @@ func (s *Store) Migrate(ctx context.Context) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_sessions_project_started ON sessions(project, started_at DESC);`,
 		`CREATE INDEX IF NOT EXISTS idx_sessions_project_active ON sessions(project, ended_at);`,
+		// v0.4 governance fields
+		`ALTER TABLE memories ADD COLUMN topic_key TEXT;`,
+		`ALTER TABLE memories ADD COLUMN status TEXT NOT NULL DEFAULT 'active';`,
+		`CREATE INDEX IF NOT EXISTS idx_memories_topic_key ON memories(topic_key) WHERE topic_key IS NOT NULL;`,
+		`CREATE INDEX IF NOT EXISTS idx_memories_status ON memories(status);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.db.ExecContext(ctx, stmt); err != nil {
@@ -169,20 +174,100 @@ func (s *Store) AppendEvent(ctx context.Context, e Event) error {
 }
 
 func (s *Store) UpsertMemory(ctx context.Context, m Memory) (Memory, error) {
+	result, err := s.UpsertMemoryFull(ctx, m)
+	return result.Memory, err
+}
+
+// UpsertMemoryFull saves the memory and returns conflict candidates for the same subject+type.
+func (s *Store) UpsertMemoryFull(ctx context.Context, m Memory) (UpsertResult, error) {
 	m.Content = StripPrivateTags(m.Content)
 	if err := validateMemory(m); err != nil {
-		return Memory{}, err
+		return UpsertResult{}, err
 	}
+	if err := DetectSensitiveData(m.Content); err != nil {
+		return UpsertResult{}, err
+	}
+
+	// topic_key: auto-supersede existing active memory with same topic_key
+	if m.TopicKey != "" {
+		if err := s.supersedeByTopicKey(ctx, &m); err != nil {
+			return UpsertResult{}, err
+		}
+	}
+
 	m = prepareMemoryForWrite(m, nil)
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return Memory{}, err
+		return UpsertResult{}, err
 	}
 	defer tx.Rollback()
 	if err := upsertMemoryTx(ctx, tx, m); err != nil {
-		return Memory{}, err
+		return UpsertResult{}, err
 	}
-	return m, tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return UpsertResult{}, err
+	}
+
+	conflicts, _ := s.FindConflicts(ctx, m)
+	return UpsertResult{Memory: m, Conflicts: conflicts}, nil
+}
+
+// supersedeByTopicKey marks any existing active memory with the same topic_key as superseded.
+func (s *Store) supersedeByTopicKey(ctx context.Context, m *Memory) error {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id FROM memories WHERE topic_key = ? AND (status IS NULL OR status = 'active') AND superseded_by IS NULL`,
+		m.TopicKey)
+	if err != nil {
+		return err
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if rows.Scan(&id) == nil {
+			ids = append(ids, id)
+		}
+	}
+	rows.Close()
+
+	now := formatTime(time.Now().UTC())
+	for _, id := range ids {
+		if _, err := s.db.ExecContext(ctx,
+			`UPDATE memories SET superseded_by = ?, updated_at = ? WHERE id = ?`,
+			m.ID, now, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// FindConflicts returns active memories with the same subject and type as m,
+// excluding m itself. Used to surface potential contradictions after a write.
+func (s *Store) FindConflicts(ctx context.Context, m Memory) ([]Memory, error) {
+	if m.Subject == "" {
+		return nil, nil
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, type, subject, content, source_kind, source_ref, scope, confidence,
+		 created_at, updated_at, valid_from, valid_until, supersedes_id, superseded_by,
+		 tags_json, embedding_refs_json, COALESCE(topic_key,''), COALESCE(status,'active')
+		 FROM memories
+		 WHERE subject = ? AND type = ? AND id != ?
+		   AND superseded_by IS NULL AND (status IS NULL OR status = 'active')
+		 ORDER BY updated_at DESC LIMIT 5`,
+		m.Subject, string(m.Type), m.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Memory
+	for rows.Next() {
+		mem, err := scanMemoryFull(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, mem)
+	}
+	return out, rows.Err()
 }
 
 func prepareMemoryForWrite(m Memory, supersedes *string) Memory {
@@ -204,6 +289,9 @@ func prepareMemoryForWrite(m Memory, supersedes *string) Memory {
 	if m.EmbeddingRefs == nil {
 		m.EmbeddingRefs = EmbeddingRefs{}
 	}
+	if m.Status == "" {
+		m.Status = StatusActive
+	}
 	return m
 }
 
@@ -216,11 +304,15 @@ func upsertMemoryTx(ctx context.Context, tx *sql.Tx, m Memory) error {
 	if err != nil {
 		return err
 	}
+	status := string(m.Status)
+	if status == "" {
+		status = string(StatusActive)
+	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO memories(
 		id, type, subject, content, source_kind, source_ref, scope, confidence,
 		created_at, updated_at, valid_from, valid_until, supersedes_id, superseded_by,
-		tags_json, embedding_refs_json
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		tags_json, embedding_refs_json, topic_key, status
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		type=excluded.type,
 		subject=excluded.subject,
@@ -235,10 +327,12 @@ func upsertMemoryTx(ctx context.Context, tx *sql.Tx, m Memory) error {
 		supersedes_id=excluded.supersedes_id,
 		superseded_by=excluded.superseded_by,
 		tags_json=excluded.tags_json,
-		embedding_refs_json=excluded.embedding_refs_json`,
+		embedding_refs_json=excluded.embedding_refs_json,
+		topic_key=excluded.topic_key,
+		status=excluded.status`,
 		m.ID, m.Type, m.Subject, m.Content, m.Source.Kind, m.Source.Ref, m.Scope, m.Confidence,
 		formatTime(m.CreatedAt), formatTime(m.UpdatedAt), nullableTime(m.ValidFrom), nullableTime(m.ValidUntil), nullableString(m.SupersedesID), nullableString(m.SupersededBy),
-		string(tags), string(embeds))
+		string(tags), string(embeds), nullableStringVal(m.TopicKey), status)
 	if err != nil {
 		return err
 	}
@@ -292,7 +386,11 @@ func (s *Store) SearchRanked(ctx context.Context, q Query) ([]RankedMemory, erro
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
-	where := []string{"m.superseded_by IS NULL"}
+	statusFilter := "(m.status IS NULL OR m.status = 'active')"
+	if q.Status != "" {
+		statusFilter = "m.status = '" + string(q.Status) + "'"
+	}
+	where := []string{"m.superseded_by IS NULL", statusFilter}
 	args := []any{}
 	join := ""
 	orderBy := "m.updated_at DESC"
@@ -376,7 +474,38 @@ func (s *Store) Supersede(ctx context.Context, oldID string, newer Memory) (Memo
 	return newer, tx.Commit()
 }
 
+// Forget soft-deletes a memory (status = 'deleted'). Use HardDelete to remove permanently.
 func (s *Store) Forget(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE memories SET status = 'deleted', updated_at = ? WHERE id = ? AND (status IS NULL OR status != 'deleted')`,
+		formatTime(time.Now().UTC()), id)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// ApproveMemory transitions a pending memory to active status.
+func (s *Store) ApproveMemory(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE memories SET status = 'active', updated_at = ? WHERE id = ? AND status = 'pending'`,
+		formatTime(time.Now().UTC()), id)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// HardDelete permanently removes a memory and its FTS index entry.
+func (s *Store) HardDelete(ctx context.Context, id string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -429,6 +558,19 @@ func validateMemory(m Memory) error {
 
 type scanner interface{ Scan(dest ...any) error }
 
+func scanMemoryFull(rows scanner) (Memory, error) {
+	var m Memory
+	var created, updated string
+	var validFrom, validUntil, supersedes, supersededBy sql.NullString
+	var tagsJSON, embedsJSON, topicKey, status string
+	if err := rows.Scan(&m.ID, &m.Type, &m.Subject, &m.Content, &m.Source.Kind, &m.Source.Ref, &m.Scope, &m.Confidence, &created, &updated, &validFrom, &validUntil, &supersedes, &supersededBy, &tagsJSON, &embedsJSON, &topicKey, &status); err != nil {
+		return Memory{}, err
+	}
+	m.TopicKey = topicKey
+	m.Status = MemoryStatus(status)
+	return finishScanMemory(m, created, updated, validFrom, validUntil, supersedes, supersededBy, tagsJSON, embedsJSON)
+}
+
 func scanMemory(rows scanner) (Memory, error) {
 	var m Memory
 	var created, updated string
@@ -437,6 +579,10 @@ func scanMemory(rows scanner) (Memory, error) {
 	if err := rows.Scan(&m.ID, &m.Type, &m.Subject, &m.Content, &m.Source.Kind, &m.Source.Ref, &m.Scope, &m.Confidence, &created, &updated, &validFrom, &validUntil, &supersedes, &supersededBy, &tagsJSON, &embedsJSON); err != nil {
 		return Memory{}, err
 	}
+	return finishScanMemory(m, created, updated, validFrom, validUntil, supersedes, supersededBy, tagsJSON, embedsJSON)
+}
+
+func finishScanMemory(m Memory, created, updated string, validFrom, validUntil, supersedes, supersededBy sql.NullString, tagsJSON, embedsJSON string) (Memory, error) {
 	var err error
 	m.CreatedAt, err = parseTime(created)
 	if err != nil {
@@ -472,6 +618,9 @@ func scanMemory(rows scanner) (Memory, error) {
 	if err := json.Unmarshal([]byte(embedsJSON), &m.EmbeddingRefs); err != nil {
 		return Memory{}, err
 	}
+	if m.Status == "" {
+		m.Status = StatusActive
+	}
 	return m, nil
 }
 
@@ -497,6 +646,13 @@ func nullableString(s *string) any {
 		return nil
 	}
 	return *s
+}
+
+func nullableStringVal(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
 
 func scanMemoryWithLexicalScore(rows scanner) (Memory, *float64, error) {

@@ -178,11 +178,12 @@ func (s *mcpServer) callTool(call toolCall) (string, error) {
 			}
 			return pretty(dryRunResult{DryRun: true, Preview: m}), nil
 		}
-		out, err := s.store.UpsertMemory(ctx, m)
-		if err == nil {
-			_ = s.store.AppendEvent(ctx, memory.Event{MemoryID: &out.ID, Kind: "memory.upserted", Payload: out.ID, Source: memory.Source{Kind: "mcp", Ref: "memory_remember"}})
+		result, err := s.store.UpsertMemoryFull(ctx, m)
+		if err != nil {
+			return "", err
 		}
-		return pretty(out), err
+		_ = s.store.AppendEvent(ctx, memory.Event{MemoryID: &result.Memory.ID, Kind: "memory.upserted", Payload: result.Memory.ID, Source: memory.Source{Kind: "mcp", Ref: "memory_remember"}})
+		return pretty(result), nil
 	case "memory_get":
 		var req struct {
 			ID string `json:"id"`
@@ -282,8 +283,8 @@ func tools() []map[string]any {
 		},
 		{
 			"name":        "memory_remember",
-			"description": "Store an approved durable memory. Use for explicit preferences, stable facts, project decisions, tasks, and corrections. Avoid casual or sensitive content unless confirmed. Set dry_run=true to preview what would be saved without persisting.",
-			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{"type": map[string]string{"type": "string"}, "subject": map[string]string{"type": "string"}, "content": map[string]string{"type": "string"}, "scope": map[string]string{"type": "string"}, "confidence": map[string]string{"type": "number"}, "tags": map[string]any{"type": "array", "items": map[string]string{"type": "string"}}, "dry_run": map[string]any{"type": "boolean", "description": "If true, return the memory that would be saved without persisting it."}}, "required": []string{"type", "content"}},
+			"description": "Store an approved durable memory. Use for explicit preferences, stable facts, project decisions, tasks, and corrections. Avoid casual or sensitive content unless confirmed. Set dry_run=true to preview. Set topic_key to a stable slug (e.g. 'rate-limiting-strategy') to auto-supersede previous memories on the same topic.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{"type": map[string]string{"type": "string"}, "subject": map[string]string{"type": "string"}, "content": map[string]string{"type": "string"}, "scope": map[string]string{"type": "string"}, "confidence": map[string]string{"type": "number"}, "tags": map[string]any{"type": "array", "items": map[string]string{"type": "string"}}, "topic_key": map[string]string{"type": "string", "description": "Stable slug for this topic. A new memory with the same topic_key auto-supersedes the previous one."}, "dry_run": map[string]any{"type": "boolean", "description": "If true, return the memory that would be saved without persisting it."}}, "required": []string{"type", "content"}},
 		},
 		{
 			"name":        "memory_search",

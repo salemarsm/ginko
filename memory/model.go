@@ -35,6 +35,15 @@ type Source struct {
 // Embeddings are deliberately not canonical memory; they are disposable indexes.
 type EmbeddingRefs map[string]string
 
+// MemoryStatus tracks the lifecycle state of a memory.
+type MemoryStatus string
+
+const (
+	StatusActive  MemoryStatus = "active"
+	StatusPending MemoryStatus = "pending"  // awaiting approval
+	StatusDeleted MemoryStatus = "deleted"  // soft-deleted
+)
+
 // Memory is the canonical unit.
 type Memory struct {
 	ID            string        `json:"id"`
@@ -52,6 +61,15 @@ type Memory struct {
 	SupersededBy  *string       `json:"superseded_by,omitempty"`
 	Tags          []string      `json:"tags"`
 	EmbeddingRefs EmbeddingRefs `json:"embedding_refs"`
+	TopicKey      string        `json:"topic_key,omitempty"`
+	Status        MemoryStatus  `json:"status,omitempty"`
+}
+
+// UpsertResult is returned by UpsertMemory. It includes the saved memory
+// plus any detected conflicts with existing memories on the same topic.
+type UpsertResult struct {
+	Memory    Memory   `json:"memory"`
+	Conflicts []Memory `json:"conflicts,omitempty"`
 }
 
 // Event is append-only raw history. Canonical memories may be derived from it.
@@ -66,6 +84,7 @@ type Event struct {
 
 // Query is intentionally simple. More advanced systems can plug in BM25,
 // vector search, graph traversal, or policy filters behind this API.
+// Query filters memories for search/context operations.
 type Query struct {
 	Text           string       `json:"text"`
 	Types          []MemoryType `json:"types"`
@@ -74,6 +93,7 @@ type Query struct {
 	Tags           []string     `json:"tags"`
 	Limit          int          `json:"limit"`
 	IncludeRanking bool         `json:"include_ranking,omitempty"`
+	Status         MemoryStatus `json:"status,omitempty"` // filter by status; empty = active only
 }
 
 // RankingMetadata is derived retrieval state, not canonical memory.

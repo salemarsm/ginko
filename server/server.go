@@ -81,6 +81,7 @@ func (s *Server) routes() {
 		s.mux.HandleFunc("POST "+prefix+"/chunks/search", s.handleChunkSearch)
 		s.mux.HandleFunc("POST "+prefix+"/documents/{id}/suggest", s.handleDocumentSuggest)
 		s.mux.HandleFunc("GET "+prefix+"/browse", s.handleBrowse)
+		s.mux.HandleFunc("POST "+prefix+"/memories/{id}/approve", s.handleApproveMemory)
 	}
 }
 
@@ -102,6 +103,7 @@ func (s *Server) handleSearchGET(w http.ResponseWriter, r *http.Request) {
 		Text:    r.URL.Query().Get("q"),
 		Subject: r.URL.Query().Get("subject"),
 		Limit:   atoiDefault(r.URL.Query().Get("limit"), 50),
+		Status:  memory.MemoryStatus(r.URL.Query().Get("status")),
 	}
 	if typ := r.URL.Query().Get("type"); typ != "" {
 		q.Types = []memory.MemoryType{memory.MemoryType(typ)}
@@ -405,6 +407,16 @@ type browseResult struct {
 	Path    string        `json:"path"`
 	Parent  string        `json:"parent"`
 	Entries []browseEntry `json:"entries"`
+}
+
+func (s *Server) handleApproveMemory(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := s.store.ApproveMemory(r.Context(), id); err != nil {
+		writeError(w, err)
+		return
+	}
+	s.appendEvent(r, memory.Event{MemoryID: &id, Kind: "memory.approved", Payload: id, Source: memory.Source{Kind: "api", Ref: r.RemoteAddr}})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "approved", "id": id})
 }
 
 func (s *Server) handleBrowse(w http.ResponseWriter, r *http.Request) {
