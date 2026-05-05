@@ -97,7 +97,7 @@
 % ---- Abstract -------------------------------------------------------------
 \begin{abstract}
 \noindent
-Modern AI agents require persistent memory that survives across sessions, projects, model providers, and increasingly across multiple cooperating agents. Current solutions conflate three distinct concerns---raw conversation history, retrieved document fragments, and durable canonical knowledge---into a single retrieval surface, typically a vector database populated by language-model extractions. This conflation has measurable costs: opaque provenance, weak auditability, weak portability across LLMs, and structural dependence on the same model that produced the memories in the first place. This paper presents \textit{Ginko}, the product distribution of the \textit{ginko} project: a local-first canonical memory layer for AI agents, named after \textit{Ginkgo biloba}, the medicinal plant popularly associated with memory and cognition. Ginko separates events, evidence, canonical conclusions, and agent interaction state into distinct primitives backed by SQLite as the single source of truth. It exposes these primitives through the Model Context Protocol (MCP), HTTP, and CLI tools, and treats embeddings as replaceable indexes rather than primary storage. We describe the data model, retrieval pipeline, supersession lifecycle, audit trail, agent-session continuity, MCP integration, and the emerging design for persistent inter-agent coordination. We then analyze the system against representative alternatives (Mem0, Letta, Zep, Cognee, Engram) and discuss limitations and a roadmap toward governance, hybrid retrieval, evidence-aware RAG, and cooperative multi-agent workflows.
+Modern AI agents require persistent memory that survives across sessions, projects, model providers, and increasingly across multiple cooperating agents. Current solutions conflate three distinct concerns---raw conversation history, retrieved document fragments, and durable canonical knowledge---into a single retrieval surface, typically a vector database populated by language-model extractions. This conflation has measurable costs: opaque provenance, weak auditability, weak portability across LLMs, and structural dependence on the same model that produced the memories in the first place. This paper presents \textit{Ginko}, the product distribution of the \textit{ginko} project: a local-first canonical memory layer for AI agents, named after \textit{Ginkgo biloba}, the medicinal plant popularly associated with memory and cognition. Ginko separates events, evidence, canonical conclusions, and agent interaction state into distinct primitives backed by SQLite as the single source of truth. It exposes these primitives through the Model Context Protocol (MCP), HTTP, and CLI tools, and treats embeddings as replaceable indexes rather than primary storage. We describe the data model, retrieval pipeline, supersession lifecycle, audit trail, governance layer (topic-key-driven auto-supersession, confidence-gated approval queues, sensitive-data detection), agent-session continuity, MCP integration, an evidence-aware RAG bridge for document ingestion, and the emerging design for persistent inter-agent coordination. We then analyze the system against representative alternatives (Mem0, Letta, Zep, Cognee, Engram) and discuss limitations and a roadmap toward hybrid retrieval and cooperative multi-agent workflows.
 
 \vspace{0.6em}
 \noindent\textbf{Keywords:} agent memory, local-first software, multi-agent coordination, retrieval, BM25, SQLite, FTS5, Model Context Protocol, RAG, auditability, supersession.
@@ -196,7 +196,7 @@ The reference implementation is composed of a product CLI, lower-level binaries,
  \item \textbf{memserver}---HTTP server with OpenAPI-documented endpoints and an embedded local web GUI.
  \item \textbf{memmcp}---Model Context Protocol server speaking JSON-RPC over stdio.
  \item \textbf{memctl}---Command-line client for direct interaction with the HTTP API.
- \item \textbf{ginko}---lower-level helper CLI for project initialization, diagnostics, and configuration generation.
+ \item \textbf{ginko-admin}---administrative utility for project initialization, diagnostics, and configuration generation.
 \end{itemize}
 
 The distribution binaries link the same \texttt{memory} package, which contains the data model, store operations, retrieval, and context projection. The system has no required external dependencies beyond Go 1.22 and uses \texttt{modernc.org/sqlite} to avoid CGO.
@@ -220,6 +220,8 @@ type Memory struct {
  ValidUntil *time.Time
  SupersedesID *string
  SupersededBy *string
+ TopicKey string // auto-supersession key within subject+scope
+ Status MemoryStatus // active, pending, deleted
  Tags []string
  EmbeddingRefs map[string]string
 }
@@ -227,7 +229,7 @@ type Memory struct {
 
 Each field encodes a design decision. \texttt{Type} and \texttt{Scope} make the memory's role and visibility explicit. \texttt{Source} preserves provenance: a memory without provenance is, in this model, weak memory. \texttt{Confidence} is bounded and validated at the schema level. \texttt{SupersedesID} and \texttt{SupersededBy} implement non-destructive replacement. \texttt{EmbeddingRefs} is a string map rather than a vector column, enforcing the ``embeddings are external indexes'' principle.
 
-Two auxiliary tables---\texttt{Documents} and \texttt{Chunks}---provide the evidence layer for RAG-style use cases, with FTS5 indexes for full-text search. A separate \texttt{context\_feedback} table stores feedback on retrieval decisions. A \texttt{schema\_migrations} table records applied migrations. All timestamps are stored as RFC3339Nano strings for portability.
+Two auxiliary tables---\texttt{Documents} and \texttt{Chunks}---provide the evidence layer for RAG-style use cases, each with FTS5 indexes for full-text search. A \texttt{ingestion\_runs} table tracks every ingest operation with SHA-256 deduplication, enabling re-ingest detection and citation provenance. A \texttt{context\_feedback} table stores feedback on retrieval decisions. A \texttt{schema\_migrations} table records applied migrations. All timestamps are stored as RFC3339Nano strings for portability.
 
 \subsection{Storage layer}
 
@@ -268,7 +270,7 @@ Three integration surfaces share the same canonical model:
 \begin{itemize}
  \item \textbf{HTTP API.} JSON over HTTP with OpenAPI documentation. Endpoints exist under both \texttt{/api/*} (legacy) and \texttt{/api/v1/*} (versioned), enabling forward compatibility. A \texttt{/healthz} endpoint supports orchestration. The HTTP server enforces \texttt{ReadHeaderTimeout}, \texttt{ReadTimeout}, \texttt{WriteTimeout}, and \texttt{IdleTimeout} to resist slow-loris-style abuse even on loopback.
  \item \textbf{Model Context Protocol.} A JSON-RPC server over stdio, conformant to MCP protocol version 2024-11-05~\cite{mcpspec}. The MCP surface exposes token-budgeted context retrieval (\texttt{memory\_context}), candidate generation (\texttt{memory\_suggest}), durable writes (\texttt{memory\_remember}), raw search (\texttt{memory\_search}), full-record retrieval (\texttt{memory\_get}), lifecycle audit (\texttt{memory\_timeline}), and session continuity tools (\texttt{memory\_session\_start}, \texttt{memory\_session\_end}, \texttt{memory\_session\_summary}). The buffer is configured for payloads up to 10\,MiB.
- \item \textbf{CLI.} \texttt{ginko} is the recommended end-user CLI. \texttt{memctl} remains available for scriptable lower-level access to primary operations and non-MCP automation.
+ \item \textbf{CLI.} \texttt{ginko} is the recommended end-user CLI. \texttt{memctl} remains available for scriptable lower-level access to primary operations and non-MCP automation. \texttt{ginko-admin} provides administrative utilities for initialization, diagnostics, and configuration.
 \end{itemize}
 
 \subsection{Persistent inter-agent coordination}
@@ -355,9 +357,9 @@ We summarize the principal limitations of the current implementation honestly. T
  \item \textbf{Token estimation.} \texttt{EstimateTokens} uses a deterministic rune-count heuristic ($\lfloor n/4 \rfloor + 1$). This is acceptable for budgeting but diverges from real BPE tokenizers, particularly for non-Latin scripts. A pluggable tokenizer interface is on the roadmap.
  \item \textbf{Single-tenant assumption.} The store assumes a single trusted user. There is no row-level security, no per-user encryption, and no scoped credential model. Multi-tenant deployments are not supported and not currently a goal.
  \item \textbf{No vector retrieval.} BM25 + subject fallback covers many cases but cannot handle queries whose semantic relationship to relevant memories is purely paraphrastic. Hybrid retrieval combining BM25 with optional embeddings is on the roadmap.
- \item \textbf{Contradiction detection is still maturing.} Governance primitives---conflict relations, supersession recommendations, confidence reinforcement, topic keys, and review queues---are central to the roadmap and are being introduced incrementally.
+ \item \textbf{Contradiction detection is still maturing.} Topic-key-driven auto-supersession, pending approval queues, and sensitive-data detection are implemented (v0.4). Full contradiction resolution---conflict escalation, confidence reinforcement, and agent-level review signals---remains on the roadmap.
  \item \textbf{Inter-agent coordination is planned, not a message bus.} Persistent coordination records can support notices, leases, handoffs, blockers, and review requests, but they are not intended for high-frequency chat or strong distributed locking.
- \item \textbf{Soft-delete semantics are still maturing.} The roadmap calls for explicit soft-delete/tombstone behavior and lifecycle-aware retrieval. Backup of the SQLite file remains the recommended safety practice until these workflows are stable.
+ \item \textbf{Soft-delete semantics are implemented but lifecycle-aware retrieval is still maturing.} The \texttt{deleted} status and tombstone behavior are available. Lifecycle-aware retrieval policies (e.g., auto-expiry, tombstone propagation) remain on the roadmap. Backup of the SQLite file remains the recommended safety practice.
 \end{itemize}
 
 % ---- 8. Roadmap ----------------------------------------------------------
@@ -366,13 +368,14 @@ We summarize the principal limitations of the current implementation honestly. T
 The project follows a versioned roadmap with explicit exit criteria for each release.
 
 \begin{itemize}
- \item \textbf{v0.1 --- Local core.} Canonical store, FTS5 retrieval, MCP server, GUI, and the first working local memory model.
- \item \textbf{v0.2 --- Local safety and installability.} API tokens, auth-aware MCP propagation, install scripts, structured logging, smoke tests, and safer local setup.
- \item \textbf{v0.3 --- Agent integration quality.} Tested integrations for Claude Code, Codex-style CLIs, OpenClaw, and generic MCP clients. Progressive-disclosure retrieval (\texttt{memory\_get}, \texttt{memory\_timeline}, and session tools). One-command setup with dry-run.
- \item \textbf{v0.4 --- Governance and memory quality.} Contradiction detection, supersession recommendation, conflict/reinforcement relations, stable \texttt{topic\_key}, status/lifecycle fields, soft delete, audit GUI, sensitive-data detection, and approval queues.
- \item \textbf{Cross-cutting --- Persistent inter-agent coordination.} A separate \texttt{agent\_signals} coordination layer for notices, leases, handoffs, conflicts, review requests, and blockers across heterogeneous agents sharing one local database.
- \item \textbf{v0.5 --- RAG bridge.} Document ingestion, chunk evidence, traceable ingestion runs, candidate extraction from evidence, and citation-aware context.
- \item \textbf{v0.6 --- Retrieval quality.} Hybrid ranking (BM25 + optional embeddings + recency decay parameterized by type), MMR-style diversification, subject-hierarchy aware retrieval, confidence-aware scoring, and retrieval evaluation fixtures.
+ \item \textbf{v0.1 --- Local core.} \textit{(Implemented.)} Canonical store, FTS5 retrieval, MCP server, GUI, and the first working local memory model.
+ \item \textbf{v0.2 --- Local safety and installability.} \textit{(Implemented.)} API tokens, auth-aware MCP propagation, install scripts, structured logging, smoke tests, and safer local setup.
+ \item \textbf{v0.3 --- Agent integration quality.} \textit{(Implemented.)} Tested integrations for Claude Code, Codex-style CLIs, OpenClaw, and generic MCP clients. Progressive-disclosure retrieval (\texttt{memory\_get}, \texttt{memory\_timeline}, and session tools). One-command setup with dry-run.
+ \item \textbf{v0.4 --- Governance and memory quality.} \textit{(Implemented.)} Topic-key-driven auto-supersession, status/lifecycle fields (\texttt{active}/\texttt{pending}/\texttt{deleted}), soft delete, sensitive-data detection, approval queues, audit GUI, and conflict detection primitives.
+ \item \textbf{v0.5 --- RAG bridge.} \textit{(Implemented.)} Document ingestion with SHA-256 deduplication, chunk evidence, traceable ingestion runs with re-ingest status, candidate extraction from evidence, and citation-aware context.
+ \item \textbf{Cross-cutting --- Persistent inter-agent coordination.} \textit{(Planned.)} A separate \texttt{agent\_signals} coordination layer for notices, leases, handoffs, conflicts, review requests, and blockers across heterogeneous agents sharing one local database.
+ \item \textbf{v0.6 --- Retrieval quality.} \textit{(Planned.)} Hybrid ranking (BM25 + optional embeddings + recency decay parameterized by type), MMR-style diversification, subject-hierarchy aware retrieval, confidence-aware scoring, and retrieval evaluation fixtures.
+ \item \textbf{v0.7 --- Packaging and distribution.} \textit{(Planned.)} GitHub release artifacts, Homebrew formula, contribution guide, and stable public API contract.
 \end{itemize}
 
 % ---- 9. Conclusion -------------------------------------------------------
@@ -440,12 +443,13 @@ Cognee documentation.
 \begin{itemize}
  \item Distribution name: Ginko, inspired by \textit{Ginkgo biloba}, the medicinal plant popularly associated with memory.
  \item Technical project/repository name: \texttt{ginko}
- \item Version family: experimental v0.x
+ \item Latest implemented milestone: v0.5 (RAG bridge); v0.6 retrieval quality planned next.
  \item License: MIT
  \item Language: Go 1.22+
  \item Dependencies: \texttt{modernc.org/sqlite}, \texttt{google/uuid} (no CGO)
+ \item Implemented features: canonical memory store, FTS5 retrieval, MCP server (9 tools), HTTP API, embedded GUI, session continuity, governance layer (topic-key supersession, approval queues, sensitive-data detection), RAG document ingestion with SHA-256 deduplication and citation context.
  \item Test coverage: invariant-focused unit, integration, MCP contract, and smoke tests
- \item Distribution: \texttt{ginko} CLI plus lower-level \texttt{ginko}, \texttt{memctl}, \texttt{memmcp}, and \texttt{memserver} binaries
+ \item Distribution: \texttt{ginko} CLI plus \texttt{memctl}, \texttt{memmcp}, \texttt{memserver}, and \texttt{ginko-admin} binaries
 \end{itemize}
 
 \end{document}
