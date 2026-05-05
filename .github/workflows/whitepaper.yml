@@ -1,0 +1,28 @@
+name: Compile Whitepaper
+
+on:
+  push:
+    paths:
+      - 'docs/whitepaper/**.tex'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LaTeX
+        run: sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-extra texlive-fonts-recommended
+
+      - name: Compile PDF
+        run: |
+          cd docs/whitepaper
+          pdflatex -interaction=nonstopmode ginko-whitepaper.tex
+          pdflatex -interaction=nonstopmode ginko-whitepaper.tex
+
+      - name: Commit PDF
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: recompile whitepaper PDF"
+          file_pattern: docs/whitepaper/ginko-whitepaper.pdf
