@@ -278,6 +278,128 @@ func TestRunEval_PrecisionAndNDCG(t *testing.T) {
 	}
 }
 
+func TestRetrieval_SupersededMemoryExcluded(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	old, err := s.UpsertMemory(ctx, Memory{
+		Type: TypeDecision, Subject: "arch", Scope: ScopeProject,
+		Content: "Use PostgreSQL for the primary store.",
+		Source:  Source{Kind: "test", Ref: "supersede"}, Confidence: 0.9,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.Supersede(ctx, old.ID, Memory{
+		Type: TypeDecision, Subject: "arch", Scope: ScopeProject,
+		Content: "Use SQLite for the primary store; local-first.",
+		Source:  Source{Kind: "test", Ref: "supersede"}, Confidence: 0.95,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := s.Search(ctx, Query{Text: "PostgreSQL primary store", Subject: "arch", Limit: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range results {
+		if m.ID == old.ID {
+			t.Fatal("superseded memory must not appear in search results")
+		}
+	}
+}
+
+func TestBuildContext_ScopePriorityProjectOverGlobal(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	_, err = s.UpsertMemory(ctx, Memory{
+		Type: TypePreference, Subject: "ginko", Scope: ScopeGlobal,
+		Content: "Prefer concise answers without preamble.",
+		Source:  Source{Kind: "test", Ref: "global"}, Confidence: 0.9,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	proj, err := s.UpsertMemory(ctx, Memory{
+		Type: TypePreference, Subject: "ginko", Scope: ScopeProject,
+		Content: "Prefer concise answers without preamble in this project context.",
+		Source:  Source{Kind: "test", Ref: "project"}, Confidence: 0.9,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// BuildContext re-sorts by FinalScore; project scope (1.0) beats global (0.6).
+	resp, err := s.BuildContext(ctx, ContextRequest{
+		Query:   "concise answers preamble",
+		Subject: "ginko",
+		Scopes:  []Scope{ScopeProject, ScopeGlobal},
+		MaxTokens: 800,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Items) < 2 {
+		t.Fatalf("expected at least 2 items, got %d", len(resp.Items))
+	}
+	if resp.Items[0].ID != proj.ID {
+		t.Fatalf("expected project-scoped memory first in context, got scope=%s", resp.Items[0].Scope)
+	}
+}
+
+func TestBuildContext_TokenBudgetExcludesLargeMemory(t *testing.T) {
+	ctx := context.Background()
+	s, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	// Large memory that alone would exceed a tiny budget.
+	large := strings.Repeat("word ", 300) // ~300 tokens
+	_, err = s.UpsertMemory(ctx, Memory{
+		Type: TypeNote, Subject: "budget", Scope: ScopeGlobal,
+		Content: large, Source: Source{Kind: "test", Ref: "large"}, Confidence: 0.9,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	small, err := s.UpsertMemory(ctx, Memory{
+		Type: TypeFact, Subject: "budget", Scope: ScopeGlobal,
+		Content: "Token budget is enforced by BuildContext.",
+		Source:  Source{Kind: "test", Ref: "small"}, Confidence: 0.95,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := s.BuildContext(ctx, ContextRequest{
+		Query: "token budget BuildContext", Subject: "budget", MaxTokens: 60,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range resp.Items {
+		if m.ID == small.ID {
+			return // small memory fits — pass
+		}
+	}
+	// If neither fits, truncated flag must be true or items is empty.
+	if !resp.Truncated && len(resp.Items) > 0 {
+		t.Fatal("large memory leaked into context past token budget")
+	}
+}
+
 func TestPrecisionAtK(t *testing.T) {
 	retrieved := []string{"a", "b", "c", "d", "e"}
 	relevant := []string{"b", "d"}

@@ -839,6 +839,7 @@ func rankMemory(m Memory, lexical *float64) RankingMetadata {
 	}
 	recency := recencyScore(m.UpdatedAt)
 	provenance := provenanceScore(m.Source)
+	scope := scopeScore(m.Scope)
 	lexicalComponent := 0.0
 	reason := []string{}
 	if lexical != nil {
@@ -854,11 +855,27 @@ func rankMemory(m Memory, lexical *float64) RankingMetadata {
 	if recency >= 0.75 {
 		reason = append(reason, "recent")
 	}
-	final := 0.45*lexicalComponent + 0.30*confidence + 0.15*provenance + 0.10*recency
+	if scope >= 0.9 {
+		reason = append(reason, "project scope")
+	}
+	final := 0.40*lexicalComponent + 0.28*confidence + 0.13*provenance + 0.09*recency + 0.10*scope
 	if lexical == nil {
-		final = 0.45*confidence + 0.35*provenance + 0.20*recency
+		final = 0.40*confidence + 0.30*provenance + 0.20*recency + 0.10*scope
 	}
 	return RankingMetadata{LexicalScore: lexical, RecencyScore: recency, ConfidenceScore: confidence, ProvenanceScore: provenance, FinalScore: final, RankReason: strings.Join(reason, " + ")}
+}
+
+func scopeScore(s Scope) float64 {
+	switch s {
+	case ScopeProject:
+		return 1.0
+	case ScopeSession:
+		return 0.8
+	case ScopeGlobal:
+		return 0.6
+	default:
+		return 0.4
+	}
 }
 
 func lexicalScore(bm25 float64) float64 {

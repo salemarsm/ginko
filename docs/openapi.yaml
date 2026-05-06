@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Ginko API
-  version: 0.1.0
-  description: Local-first canonical memory API for AI agents. Endpoints are available under /api and /api/v1 during v0.x; prefer /api/v1 for new integrations.
+  version: 1.0.0
+  description: Local-first canonical memory API for AI agents. All endpoints are available under both /api and /api/v1; prefer /api/v1 for new integrations.
 servers:
   - url: http://127.0.0.1:8787
 security:
@@ -290,6 +290,233 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Document'
+  /api/documents/{id}/extract:
+    post:
+      summary: Extract memory candidates from document chunks using LLM (falls back to heuristic)
+      parameters:
+        - $ref: '#/components/parameters/MemoryID'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChunkSuggestRequest'
+      responses:
+        '200':
+          description: Memory candidates extracted by LLM
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChunkSuggestResponse'
+  /api/ingest/status:
+    get:
+      summary: Check re-ingest status for a path (unchanged/changed/new)
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Ingest status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [unchanged, changed, new] }
+                  path: { type: string }
+                  sha256: { type: string }
+  /api/memories/{id}/timeline:
+    get:
+      summary: Lifecycle/audit trail for a memory (supersessions, deletes, approvals)
+      parameters:
+        - $ref: '#/components/parameters/MemoryID'
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Ordered events for this memory
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '404':
+          description: Not found
+  /api/memories/{id}/approve:
+    post:
+      summary: Approve a pending memory (sets status=active)
+      parameters:
+        - $ref: '#/components/parameters/MemoryID'
+      responses:
+        '200':
+          description: Approved memory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memory'
+  /api/sessions/start:
+    post:
+      summary: Start a project session; returns last closed session summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project: { type: string }
+      responses:
+        '200':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStartResponse'
+  /api/sessions/end:
+    post:
+      summary: End session with a summary for future continuity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project, summary]
+              properties:
+                project: { type: string }
+                summary: { type: string }
+      responses:
+        '200':
+          description: Session closed
+  /api/sessions/summary:
+    post:
+      summary: Retrieve the most recent closed session summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project: { type: string }
+      responses:
+        '200':
+          description: Last session summary
+  /api/signals:
+    get:
+      summary: List coordination signals
+      parameters:
+        - name: project
+          in: query
+          schema: { type: string }
+        - name: kind
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, default: active }
+        - name: agent
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+      responses:
+        '200':
+          description: Signals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AgentSignal'
+    post:
+      summary: Create a coordination signal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentSignal'
+      responses:
+        '200':
+          description: Created signal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSignal'
+  /api/signals/expire:
+    post:
+      summary: Sweep and expire all stale leases whose expires_at is in the past
+      responses:
+        '200':
+          description: Number of signals expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  expired: { type: integer }
+  /api/signals/{id}:
+    get:
+      summary: Get a signal by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Signal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSignal'
+        '404':
+          description: Not found
+  /api/signals/{id}/acknowledge:
+    post:
+      summary: Acknowledge a signal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Updated signal
+  /api/signals/{id}/resolve:
+    post:
+      summary: Resolve a signal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Updated signal
+  /api/signals/{id}/cancel:
+    post:
+      summary: Cancel a signal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Updated signal
+  /api/analytics/supersessions:
+    get:
+      summary: Supersession timeline for audit/analytics view
+      responses:
+        '200':
+          description: Supersession timeline
 components:
   securitySchemes:
     bearerAuth:
@@ -425,6 +652,11 @@ components:
           type: string
           enum: [global, project, session, private]
         confidence: { type: number, minimum: 0, maximum: 1, example: 0.95 }
+        status:
+          type: string
+          enum: [active, pending, deleted]
+          default: active
+        topic_key: { type: string, nullable: true, description: "Auto-supersedes previous memory with same (subject, topic_key) on write" }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
         valid_from: { type: string, format: date-time, nullable: true }
@@ -478,9 +710,66 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Memory'
+        rankings:
+          type: object
+          description: Ranking metadata keyed by memory ID
+          additionalProperties:
+            $ref: '#/components/schemas/RankingMetadata'
+        conflicts:
+          type: array
+          description: Structural conflicts detected in context window (same subject+type)
+          items:
+            $ref: '#/components/schemas/ContextConflict'
         estimated_tokens: { type: integer }
         budget_tokens: { type: integer }
         truncated: { type: boolean }
+    RankingMetadata:
+      type: object
+      properties:
+        lexical_score: { type: number, nullable: true }
+        semantic_score: { type: number, nullable: true }
+        recency_score: { type: number }
+        confidence_score: { type: number }
+        provenance_score: { type: number }
+        final_score: { type: number }
+        rank_reason: { type: string }
+    ContextConflict:
+      type: object
+      properties:
+        subject: { type: string }
+        type: { type: string }
+        ids:
+          type: array
+          items: { type: string }
+    AgentSignal:
+      type: object
+      required: [project, kind, owner_agent, payload]
+      properties:
+        id: { type: string, example: sig_01J }
+        project: { type: string }
+        topic_key: { type: string, nullable: true }
+        kind:
+          type: string
+          enum: [notice, lease, handoff, conflict, review_request, blocker]
+        status:
+          type: string
+          enum: [active, acknowledged, expired, resolved, cancelled]
+          default: active
+        owner_agent: { type: string, example: claude-code }
+        target_agent: { type: string, nullable: true }
+        payload: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true, description: "Required for lease signals" }
+        resolved_at: { type: string, format: date-time, nullable: true }
+        memory_id: { type: string, nullable: true }
+        session_id: { type: string, nullable: true }
+    SessionStartResponse:
+      type: object
+      properties:
+        session_id: { type: string }
+        project: { type: string }
+        started_at: { type: string, format: date-time }
+        last_summary: { type: string, nullable: true }
     MemoryUsage:
       type: object
       properties:

@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v1.0] — Stable local-first memory server
+
+### Added
+- **Scope priority in hybrid ranker**: project-scoped memories rank above global-scoped memories via a 10% scope component in `final_score` (project=1.0, session=0.8, global=0.6). Weights rebalanced: lexical 40%, confidence 28%, provenance 13%, recency 9%, scope 10%.
+- **Retrieval eval fixtures**: supersession filtering, scope priority, and token budget enforcement tests added to `retrieval_eval_test.go`. Covers all v0.6 exit criteria: lexical precision, hybrid ranking, context quality, conflict detection, supersession exclusion, scope priority, and token budget.
+- **OpenAPI v1.0.0**: spec bumped from 0.1.0, all missing endpoints added — sessions, signals (full CRUD + transitions + expire), memory timeline, memory approve, document extract, ingest status, supersession analytics. `Memory` schema updated with `topic_key` and `status`. `ContextResponse` updated with `rankings` and `conflicts`. New schemas: `RankingMetadata`, `ContextConflict`, `AgentSignal`, `SessionStartResponse`.
+- **`docs/migration.md`**: schema migration strategy — how migrations run, how to check schema version, forward-only policy, contributor instructions, SQLite portability notes.
+- **`docs/security.md`**: expanded with full backup/restore section — backup while running (WAL), restore procedure, integrity check, JSON export, cron backup example.
+- **`docs/mcp.md`**: complete MCP tool reference — all 13 tools with input/output schemas, agent bootstrap prompt, and v1.0 stability contract.
+
+---
+
 ## [v0.7] — Packaging and ecosystem
 
 ### Added
