@@ -1,7 +1,7 @@
 # Normaliza fim de linha: LF no repositório e no working tree.
 # Sem isto, o core.autocrlf=true do Windows commita CRLF, o que faz `gofmt -l`
 # acusar todos os arquivos Go do projeto.
-* text=auto
+* text=auto eol=lf
 
 *.go     text eol=lf
 *.mod    text eol=lf
