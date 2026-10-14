@@ -583,8 +583,12 @@ type SupersessionTimelineEntry struct {
 
 // SupersessionTimeline returns recent supersession events ordered by time desc.
 func (s *Store) SupersessionTimeline(ctx context.Context, limit int) ([]SupersessionTimelineEntry, error) {
-	if limit <= 0 || limit > 200 {
+	// Mesmo contrato do ListEvents: acima do maximo clampa para o maximo.
+	if limit <= 0 {
 		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
 	}
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT old.id, new.id, new.subject, old.type, new.created_at
@@ -649,8 +653,13 @@ func (s *Store) HardDelete(ctx context.Context, id string) error {
 }
 
 func (s *Store) ListEvents(ctx context.Context, limit int) ([]Event, error) {
-	if limit <= 0 || limit > 200 {
+	// Clampar acima do maximo para o MAXIMO, nao para o padrao: pedir 201 nao
+	// pode devolver menos que pedir 200.
+	if limit <= 0 {
 		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
 	}
 	rows, err := s.db.QueryContext(ctx, `SELECT id, memory_id, kind, payload, source_kind, source_ref, created_at FROM events ORDER BY created_at DESC LIMIT ?`, limit)
 	if err != nil {

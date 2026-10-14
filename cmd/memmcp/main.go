@@ -292,7 +292,16 @@ func (s *mcpServer) callTool(call toolCall) (string, error) {
 			q.Project = s.project
 		}
 		out, err := s.store.ListSignals(ctx, q)
-		return pretty(out), err
+		if err != nil {
+			return "", err
+		}
+		// Lista vazia precisa serializar como [] e nao null, igual ao handler
+		// HTTP. Um cliente que compara comprimento ou itera o resultado trata
+		// null e [] de forma diferente.
+		if out == nil {
+			out = []memory.AgentSignal{}
+		}
+		return pretty(out), nil
 	case "signal_update":
 		var req struct {
 			ID     string              `json:"id"`
