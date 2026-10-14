@@ -1,0 +1,30 @@
+# Normaliza fim de linha: LF no repositório e no working tree.
+# Sem isto, o core.autocrlf=true do Windows commita CRLF, o que faz `gofmt -l`
+# acusar todos os arquivos Go do projeto.
+* text=auto
+
+*.go     text eol=lf
+*.mod    text eol=lf
+*.sum    text eol=lf
+*.md     text eol=lf
+*.txt    text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.json   text eol=lf
+*.sh     text eol=lf
+*.tex    text eol=lf
+Makefile text eol=lf
+Dockerfile text eol=lf
+
+# Binários: nunca converter
+*.pdf binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.exe binary
+*.db binary
+*.sqlite binary
+*.zip binary
+*.gz binary
