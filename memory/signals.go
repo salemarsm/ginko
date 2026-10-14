@@ -194,4 +194,3 @@ func validateSignal(sig AgentSignal) error {
 	}
 	return nil
 }
-

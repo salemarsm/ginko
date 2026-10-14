@@ -46,13 +46,13 @@ func TestE2EMemoryLifecycle(t *testing.T) {
 
 	// --- 1. Save a memory (simulates agent calling memory_remember) ---
 	mem1 := memory.Memory{
-		Type:      memory.TypeFact,
-		Subject:   "e2e-project",
-		Content:   "auth/middleware.ts: token refresh failed due to iat clock skew — fixed with clockTolerance=30",
-		Scope:     memory.ScopeProject,
-		Confidence: 0.92,
-		Source:    memory.Source{Kind: "mcp", Ref: "memory_remember"},
-		Tags:      []string{"auth", "jwt"},
+		Type:          memory.TypeFact,
+		Subject:       "e2e-project",
+		Content:       "auth/middleware.ts: token refresh failed due to iat clock skew — fixed with clockTolerance=30",
+		Scope:         memory.ScopeProject,
+		Confidence:    0.92,
+		Source:        memory.Source{Kind: "mcp", Ref: "memory_remember"},
+		Tags:          []string{"auth", "jwt"},
 		EmbeddingRefs: memory.EmbeddingRefs{},
 	}
 	saved, err := store.UpsertMemory(ctx, mem1)
@@ -87,13 +87,13 @@ func TestE2EMemoryLifecycle(t *testing.T) {
 
 	// --- 4. Supersede the memory ---
 	updated := memory.Memory{
-		Type:      memory.TypeFact,
-		Subject:   "e2e-project",
-		Content:   "auth/middleware.ts: token refresh fixed with clockTolerance=30 AND skew=60 after follow-up report",
-		Scope:     memory.ScopeProject,
-		Confidence: 0.95,
-		Source:    memory.Source{Kind: "mcp", Ref: "memory_remember"},
-		Tags:      []string{"auth", "jwt"},
+		Type:          memory.TypeFact,
+		Subject:       "e2e-project",
+		Content:       "auth/middleware.ts: token refresh fixed with clockTolerance=30 AND skew=60 after follow-up report",
+		Scope:         memory.ScopeProject,
+		Confidence:    0.95,
+		Source:        memory.Source{Kind: "mcp", Ref: "memory_remember"},
+		Tags:          []string{"auth", "jwt"},
 		EmbeddingRefs: memory.EmbeddingRefs{},
 	}
 	superseded, err := store.Supersede(ctx, saved.ID, updated)

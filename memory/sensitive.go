@@ -47,4 +47,3 @@ func SensitiveDataReport(content string) []string {
 	}
 	return found
 }
-

@@ -10,19 +10,19 @@ import (
 )
 
 type agentSetup struct {
-	id          string
-	label       string
-	configPath  func() (string, error)
-	install     func(dryRun, noBackup bool) error
-	detected    bool
+	id         string
+	label      string
+	configPath func() (string, error)
+	install    func(dryRun, noBackup bool) error
+	detected   bool
 }
 
 func buildAgents() []agentSetup {
 	home, _ := os.UserHomeDir()
 	agents := []agentSetup{
 		{
-			id:    "claude-code",
-			label: "Claude Code",
+			id:         "claude-code",
+			label:      "Claude Code",
 			configPath: func() (string, error) { return resolveSettingsPath("user") },
 			install: func(dryRun, noBackup bool) error {
 				args := []string{}
@@ -38,8 +38,8 @@ func buildAgents() []agentSetup {
 			},
 		},
 		{
-			id:    "openclaw",
-			label: "OpenClaw",
+			id:         "openclaw",
+			label:      "OpenClaw",
 			configPath: openclawConfigPath,
 			install: func(dryRun, noBackup bool) error {
 				return setupOpenClaw(dryRun, noBackup)
