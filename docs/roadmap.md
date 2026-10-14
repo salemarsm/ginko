@@ -1,6 +1,6 @@
 # Development roadmap
 
-Status: **experimental v0.x**. This roadmap is intentionally explicit about what is implemented, planned, and non-goals.
+Status: **v1.0 tagged**. This roadmap is intentionally explicit about what is implemented, planned, and non-goals.
 
 ## Product thesis
 

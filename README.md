@@ -15,7 +15,7 @@
   <img alt="SQLite source of truth" src="https://img.shields.io/badge/SQLite-source%20of%20truth-103020?style=for-the-badge&logo=sqlite&logoColor=white&labelColor=000407">
   <img alt="MCP native" src="https://img.shields.io/badge/MCP-native-30B080?style=for-the-badge&labelColor=000407">
   <img alt="Local first" src="https://img.shields.io/badge/local--first-yes-206040?style=for-the-badge&labelColor=000407">
-  <img alt="Experimental" src="https://img.shields.io/badge/status-experimental-9FE870?style=for-the-badge&labelColor=000407">
+  <img alt="v1.0" src="https://img.shields.io/badge/status-v1.0-30B080?style=for-the-badge&labelColor=000407">
 </p>
 
 <p align="center">
@@ -78,27 +78,25 @@ It solves a common problem: agents often confuse chat history, vector search, do
 
 ## Status
 
-**Experimental v0.x.** The local core, HTTP API, CLI, MCP server, token-budgeted context, and heuristic suggestion flow are implemented. APIs and schemas may change before v1.0.
+**v1.0.** The local core, HTTP API, CLI, MCP server, token-budgeted context, hybrid retrieval ranking, RAG ingestion, and governance flows are implemented and covered by tests. The v1.0 tag marks a stable API and schema contract; see [migration](docs/migration.md) for the versioning policy.
 
 Implemented today:
 
-- SQLite canonical memory store
-- append-only events
-- FTS5 memory search
-- HTTP API and local GUI
-- `memctl`, `memmcp`, and `ginko` CLIs
-- MCP tools: `memory_context`, `memory_suggest`, `memory_remember`, `memory_search`
-- heuristic memory suggestions
-- document/chunk schema foundation for future RAG ingestion
+- SQLite canonical memory store with an append-only event log
+- FTS5 lexical search plus hybrid ranking over lexical, confidence, provenance, recency, and scope signals
+- HTTP API (`/api/...` and `/api/v1/...`, OpenAPI 1.0.0) and an embedded local GUI
+- `ginko`, `ginko-admin`, `memctl`, `memmcp`, and `memserver` binaries
+- MCP server exposing `memory_context`, `memory_search`, `memory_get`, `memory_remember`, `memory_suggest`, `memory_timeline`, the session tools, and the `signal_*` coordination tools
+- RAG ingestion via `ginko ingest` with SHA-256 deduplication, traceable ingestion runs, chunk evidence, and citation links
+- governance: topic keys, status lifecycle, soft delete, sensitive-data detection, approval queue, and conflict detection
+- persistent inter-agent coordination signals (`notice`, `lease`, `handoff`, `conflict`, `review_request`, `blocker`)
 - HTTP API bearer-token auth for non-loopback binds
 
-Planned / not production-ready yet:
+Not done yet:
 
-- Docling ingestion command
-- hybrid vector ranking
-- full contradiction resolution policy
 - production multi-user isolation
-- stable v1 API guarantees
+- automatic resolution of contradictions (detection exists; resolution is manual)
+- Homebrew formula
 
 ## Technical deep dive
 
@@ -255,7 +253,7 @@ Evidence:
 doc_id=..., chunk_id=...
 ```
 
-See [RAG pipeline](docs/rag-pipeline.md). **Docling ingestion is planned; document/chunk tables are implemented as the foundation.**
+See [RAG pipeline](docs/rag-pipeline.md).
 
 ## Memory types
 
@@ -455,47 +453,19 @@ Keep project-specific knowledge compartmentalized per tool, target, client, or e
 
 ## Roadmap
 
-### v0.1 — Local core
+Milestones v0.1 through v1.0 are implemented and tagged. The authoritative plan —
+explicit about what is implemented, planned, and out of scope — lives in
+[docs/roadmap.md](docs/roadmap.md), with prioritised work items in
+[docs/backlog.md](docs/backlog.md).
 
-- SQLite store
-- migrations
-- FTS5 search
-- event log
-- HTTP API
-- embedded GUI
-- CLI
+In short:
 
-### v0.2 — Agent integration and local safety
+- **v0.1–v0.5** — local core (SQLite store, FTS5, event log, HTTP API, embedded GUI, CLI, MCP), local safety (API tokens, auth-aware MCP), agent integration, governance, and the RAG bridge.
+- **v0.6** — hybrid retrieval ranking, the embedding adapter interface, the retrieval evaluation harness, and persistent inter-agent coordination signals.
+- **v0.7** — packaging: Docker image, GoReleaser releases, and per-OS install docs.
+- **v1.0** — stable API and schema contract, OpenAPI 1.0.0, and the migration and backup/restore documentation.
 
-- MCP tools
-- token-budgeted context
-- memory suggestion
-- CLI integration
-- OpenClaw / Claude Code / Codex examples
-- local API token
-
-### v0.3 — Governance
-
-- memory write policy enforcement
-- sensitive-data guardrails
-- soft delete vs hard delete
-- audit UI
-
-### v0.4 — RAG bridge
-
-- document import
-- Docling ingestion
-- chunk evidence
-- memory candidate extraction
-- citation linking
-
-### v0.5 — Retrieval quality
-
-- hybrid ranking
-- confidence scoring
-- recency weighting
-- supersession-aware retrieval
-- optional vector adapters
+What comes next is tracked in [docs/backlog.md](docs/backlog.md).
 
 ## Documentation
 
