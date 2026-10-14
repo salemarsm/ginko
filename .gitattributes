@@ -1,6 +1,9 @@
-# Normaliza fim de linha: LF no repositório e no working tree.
-# Sem isto, o core.autocrlf=true do Windows commita CRLF, o que faz `gofmt -l`
-# acusar todos os arquivos Go do projeto.
+# Fixa LF no repositorio e no working tree.
+#
+# O conteudo commitado neste repositorio sempre foi LF. O que existia era ruido
+# local: no Windows com core.autocrlf=true, o checkout gera CRLF no working tree,
+# e `gofmt -l` passa a acusar todos os arquivos Go como desformatados.
+# Com eol=lf o working tree fica LF em qualquer sistema operacional.
 * text=auto eol=lf
 
 *.go     text eol=lf
