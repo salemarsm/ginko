@@ -341,9 +341,9 @@ func TestBuildContext_ScopePriorityProjectOverGlobal(t *testing.T) {
 
 	// BuildContext re-sorts by FinalScore; project scope (1.0) beats global (0.6).
 	resp, err := s.BuildContext(ctx, ContextRequest{
-		Query:   "concise answers preamble",
-		Subject: "ginko",
-		Scopes:  []Scope{ScopeProject, ScopeGlobal},
+		Query:     "concise answers preamble",
+		Subject:   "ginko",
+		Scopes:    []Scope{ScopeProject, ScopeGlobal},
 		MaxTokens: 800,
 	})
 	if err != nil {

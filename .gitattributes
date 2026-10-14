@@ -1,0 +1,33 @@
+# Fixa LF no repositorio e no working tree.
+#
+# O conteudo commitado neste repositorio sempre foi LF. O que existia era ruido
+# local: no Windows com core.autocrlf=true, o checkout gera CRLF no working tree,
+# e `gofmt -l` passa a acusar todos os arquivos Go como desformatados.
+# Com eol=lf o working tree fica LF em qualquer sistema operacional.
+* text=auto eol=lf
+
+*.go     text eol=lf
+*.mod    text eol=lf
+*.sum    text eol=lf
+*.md     text eol=lf
+*.txt    text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.json   text eol=lf
+*.sh     text eol=lf
+*.tex    text eol=lf
+Makefile text eol=lf
+Dockerfile text eol=lf
+
+# Binários: nunca converter
+*.pdf binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.exe binary
+*.db binary
+*.sqlite binary
+*.zip binary
+*.gz binary

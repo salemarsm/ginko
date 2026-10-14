@@ -18,15 +18,15 @@ import (
 )
 
 type IngestRequest struct {
-	Path         string `json:"path"`
-	Recursive    bool   `json:"recursive"`
+	Path      string `json:"path"`
+	Recursive bool   `json:"recursive"`
 	// AutoExtract runs LLM-powered memory extraction after ingest when an LLM
 	// adapter is configured. No-op when no LLM adapter is set.
-	AutoExtract  bool   `json:"auto_extract,omitempty"`
+	AutoExtract bool `json:"auto_extract,omitempty"`
 	// Subject is the memory subject for auto-extracted candidates (defaults to doc title).
-	Subject      string `json:"subject,omitempty"`
+	Subject string `json:"subject,omitempty"`
 	// Scope for auto-extracted memories (defaults to "project").
-	Scope        Scope  `json:"scope,omitempty"`
+	Scope Scope `json:"scope,omitempty"`
 }
 
 type IngestResponse struct {
@@ -191,8 +191,8 @@ func isDoclingIngestFile(path string) bool {
 
 // IngestFileStatusResult describes whether a file needs re-ingestion.
 type IngestFileStatusResult struct {
-	Path      string `json:"path"`
-	Status    string `json:"status"` // "new", "unchanged", "changed", "unsupported"
+	Path       string `json:"path"`
+	Status     string `json:"status"` // "new", "unchanged", "changed", "unsupported"
 	DocumentID string `json:"document_id,omitempty"`
 }
 

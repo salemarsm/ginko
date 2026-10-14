@@ -21,14 +21,14 @@ GINKO_INSTALL_DIR=/usr/local/bin curl -fsSL \
 Install a specific version:
 
 ```bash
-GINKO_VERSION=v0.6 curl -fsSL \
+GINKO_VERSION=v1.0 curl -fsSL \
   https://raw.githubusercontent.com/salemarsm/ginko/main/install.sh | bash
 ```
 
 **Manual download:**
 
 ```bash
-VERSION=v0.6
+VERSION=v1.0
 ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 curl -fsSL "https://github.com/salemarsm/ginko/releases/download/$VERSION/ginko_${VERSION#v}_linux_${ARCH}.tar.gz" \
   | tar -xz -C ~/.local/bin
@@ -54,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/salemarsm/ginko/main/install.sh | b
 **Manual download (Apple Silicon):**
 
 ```bash
-VERSION=v0.6
+VERSION=v1.0
 curl -fsSL "https://github.com/salemarsm/ginko/releases/download/$VERSION/ginko_${VERSION#v}_darwin_arm64.tar.gz" \
   | tar -xz -C ~/.local/bin
 ```
@@ -62,7 +62,7 @@ curl -fsSL "https://github.com/salemarsm/ginko/releases/download/$VERSION/ginko_
 **Manual download (Intel):**
 
 ```bash
-VERSION=v0.6
+VERSION=v1.0
 curl -fsSL "https://github.com/salemarsm/ginko/releases/download/$VERSION/ginko_${VERSION#v}_darwin_amd64.tar.gz" \
   | tar -xz -C ~/.local/bin
 ```
@@ -82,7 +82,7 @@ Download the `.zip` from the [releases page](https://github.com/salemarsm/ginko/
 PowerShell:
 
 ```powershell
-$version = "v0.6"
+$version = "v1.0"
 $arch    = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
 $url     = "https://github.com/salemarsm/ginko/releases/download/$version/ginko_$($version.TrimStart('v'))_windows_$arch.zip"
 Invoke-WebRequest $url -OutFile "$env:TEMP\ginko.zip"

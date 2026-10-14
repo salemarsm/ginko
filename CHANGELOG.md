@@ -11,7 +11,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **OpenAPI v1.0.0**: spec bumped from 0.1.0, all missing endpoints added — sessions, signals (full CRUD + transitions + expire), memory timeline, memory approve, document extract, ingest status, supersession analytics. `Memory` schema updated with `topic_key` and `status`. `ContextResponse` updated with `rankings` and `conflicts`. New schemas: `RankingMetadata`, `ContextConflict`, `AgentSignal`, `SessionStartResponse`.
 - **`docs/migration.md`**: schema migration strategy — how migrations run, how to check schema version, forward-only policy, contributor instructions, SQLite portability notes.
 - **`docs/security.md`**: expanded with full backup/restore section — backup while running (WAL), restore procedure, integrity check, JSON export, cron backup example.
-- **`docs/mcp.md`**: complete MCP tool reference — all 13 tools with input/output schemas, agent bootstrap prompt, and v1.0 stability contract.
+- **`docs/mcp.md`**: complete MCP tool reference — all 12 tools with input/output schemas, agent bootstrap prompt, and v1.0 stability contract.
 
 ---
 

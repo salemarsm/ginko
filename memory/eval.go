@@ -19,13 +19,13 @@ type EvalFixture struct {
 
 // FixtureResult holds retrieval output and computed metrics for one fixture.
 type FixtureResult struct {
-	Label         string             `json:"label"`
-	Query         string             `json:"query"`
-	RetrievedIDs  []string           `json:"retrieved_ids"`
-	RelevantIDs   []string           `json:"relevant_ids"`
-	PrecisionAt5  float64            `json:"precision_at_5"`
-	NDCG10        float64            `json:"ndcg_at_10"`
-	Rankings      []RankingMetadata  `json:"rankings,omitempty"`
+	Label        string            `json:"label"`
+	Query        string            `json:"query"`
+	RetrievedIDs []string          `json:"retrieved_ids"`
+	RelevantIDs  []string          `json:"relevant_ids"`
+	PrecisionAt5 float64           `json:"precision_at_5"`
+	NDCG10       float64           `json:"ndcg_at_10"`
+	Rankings     []RankingMetadata `json:"rankings,omitempty"`
 }
 
 // EvalReport summarizes retrieval quality across all fixtures in a run.

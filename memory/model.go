@@ -40,8 +40,8 @@ type MemoryStatus string
 
 const (
 	StatusActive  MemoryStatus = "active"
-	StatusPending MemoryStatus = "pending"  // awaiting approval
-	StatusDeleted MemoryStatus = "deleted"  // soft-deleted
+	StatusPending MemoryStatus = "pending" // awaiting approval
+	StatusDeleted MemoryStatus = "deleted" // soft-deleted
 )
 
 // Memory is the canonical unit.
@@ -170,6 +170,6 @@ type SignalQuery struct {
 	Project string
 	Kind    SignalKind
 	Status  SignalStatus // empty = active only
-	Agent   string      // owner or target
+	Agent   string       // owner or target
 	Limit   int
 }

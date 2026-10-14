@@ -16,7 +16,6 @@ import (
 	"github.com/salemarsm/ginko/memory"
 )
 
-
 type Server struct {
 	store *memory.Store
 	cfg   config.Config
