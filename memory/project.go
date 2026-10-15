@@ -17,6 +17,15 @@ type projectConfig struct {
 }
 
 func DetectProject(cwd string) string {
+	// Override explicito, com precedencia sobre tudo.
+	//
+	// Um servidor MCP herda o diretorio de trabalho do CLIENTE, nao o do
+	// repositorio que ele serve. Sem isto, a deteccao por CWD resolve para o
+	// basename da pasta do usuario (ex.: "salemarsm") e toda consulta devolve
+	// vazio em silencio -- sem erro, sem aviso.
+	if env := strings.TrimSpace(os.Getenv("GINKO_PROJECT")); env != "" {
+		return NormalizeProject(env)
+	}
 	if strings.TrimSpace(cwd) == "" {
 		if wd, err := os.Getwd(); err == nil {
 			cwd = wd

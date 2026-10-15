@@ -45,7 +45,7 @@ type mcpServer struct {
 }
 
 func main() {
-	db := flag.String("db", envDefault("GINKO_DB", "./memory.db"), "SQLite database path")
+	db := flag.String("db", envDefault("GINKO_DB", ""), "SQLite database path (default: the path from the ginko config, else ~/.ginko/ginko.db)")
 	agentName := flag.String("agent", envDefault("GINKO_AGENT", "claude-code"), "agent name for profile lookup")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
@@ -55,7 +55,7 @@ func main() {
 		return
 	}
 
-	store, err := memory.Open(*db)
+	store, err := memory.Open(resolveDBPath(*db))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -292,7 +292,16 @@ func (s *mcpServer) callTool(call toolCall) (string, error) {
 			q.Project = s.project
 		}
 		out, err := s.store.ListSignals(ctx, q)
-		return pretty(out), err
+		if err != nil {
+			return "", err
+		}
+		// Lista vazia precisa serializar como [] e nao null, igual ao handler
+		// HTTP. Um cliente que compara comprimento ou itera o resultado trata
+		// null e [] de forma diferente.
+		if out == nil {
+			out = []memory.AgentSignal{}
+		}
+		return pretty(out), nil
 	case "signal_update":
 		var req struct {
 			ID     string              `json:"id"`
